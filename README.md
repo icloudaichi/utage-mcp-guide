@@ -1,4 +1,4 @@
-# utage-skill
+# utage-mcp-guide
 
 UTAGEのMCPサーバーを最大限活用するためのオンボーディングキット。  
 実機検証で発見した落とし穴を回避し、AIでUTAGE操作を安全に自動化します。
@@ -43,13 +43,13 @@ IDEを再起動すると初回のみブラウザでOAuth認証が開きます。
 AIツール（Antigravity / Cursor / Claude Code 等）に以下のように伝えてください:
 
 ```
-utage-skill の SKILL.md を読んで、[やりたいこと] をやって
+utage-mcp-guide の SKILL.md を読んで、[やりたいこと] をやって
 ```
 
 ## フォルダ構成
 
 ```
-utage-skill/
+utage-mcp-guide/
 ├── SKILL.md          # エントリーポイント（共通トラップ集）
 ├── messages/         # ステップメール・LINE配信
 ├── funnels/          # ファネル・LP・ページ要素
@@ -62,7 +62,7 @@ utage-skill/
 
 ## フィードバック
 
-エラー・新発見・改善提案は [GitHub Discussions](https://github.com/icloudaichi/utage-skill/discussions) へ。  
+エラー・新発見・改善提案は [GitHub Discussions](https://github.com/icloudaichi/utage-mcp-guide/discussions) へ。  
 AIに「GitHubに報告して」と言えば `report_discussion.py` が自動投稿します。
 
 ## ライセンス

@@ -24,7 +24,7 @@ AIが以下を自動実行します:
 ## 手動投稿
 
 GitHub Token を持っていない場合は直接投稿:
-https://github.com/icloudaichi/utage-skill/discussions/new
+https://github.com/icloudaichi/utage-mcp-guide/discussions/new
 
 カテゴリ:
 - `Bug` → APIの動作が仕様と異なる

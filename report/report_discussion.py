@@ -15,7 +15,7 @@ import urllib.error
 from datetime import datetime
 
 REPO_OWNER = "icloudaichi"
-REPO_NAME = "utage-skill"
+REPO_NAME = "utage-mcp-guide"
 REPO_ID = "R_kgDOSISvZg"
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
@@ -31,7 +31,7 @@ BODY_TEMPLATE = """{body}
 ---
 *このディスカッションは `report_discussion.py` によって自動投稿されました。*
 *投稿日時: {date}*
-*utage-skill バージョン: 0.1.0*
+*utage-mcp-guide バージョン: 0.1.0*
 """
 
 

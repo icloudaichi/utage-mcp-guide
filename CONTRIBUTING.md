@@ -13,7 +13,7 @@ AIに「GitHubに報告して」と言うだけでOKです。
 
 ### 直接投稿する
 
-https://github.com/icloudaichi/utage-skill/discussions/new
+https://github.com/icloudaichi/utage-mcp-guide/discussions/new
 
 カテゴリの目安:
 - **Bug**: APIが仕様と異なる動作をする

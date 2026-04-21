@@ -1,5 +1,5 @@
 ---
-name: utage-skill
+name: utage-mcp-guide
 description: >
   UTAGEのMCPサーバーを安全に使うためのコミュニティ知見ベース。
   実機検証で発見したサイレント失敗・プロパティ名の罠を回避し、
@@ -13,7 +13,7 @@ requires:
 > MCPサーバーに接続すればツール定義は手に入る。  
 > しかしサイレント失敗やプロパティ名の罠は、踏んだ人にしかわからない。  
 > このスキルはその知見を集めて、全員が同じ穴に落ちないようにするプロジェクトです。  
-> エラー・新発見はぜひ [GitHub Discussions](https://github.com/icloudaichi/utage-skill/discussions) へ。
+> エラー・新発見はぜひ [GitHub Discussions](https://github.com/icloudaichi/utage-mcp-guide/discussions) へ。
 
 ---
 
@@ -87,4 +87,4 @@ setup/ フォルダの SKILL.md を参照してください
 - **対象**: UTAGE 公式 MCPサーバー + REST API v1
 - **メンテナー**: [@icloudaichi](https://github.com/icloudaichi)
 - **バージョン**: 0.2.0（2026-04-21）
-- **フィードバック**: [GitHub Discussions](https://github.com/icloudaichi/utage-skill/discussions)
+- **フィードバック**: [GitHub Discussions](https://github.com/icloudaichi/utage-mcp-guide/discussions)
