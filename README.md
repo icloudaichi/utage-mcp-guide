@@ -20,8 +20,9 @@ UTAGEのMCPサーバーを **VS Codeフォーク系IDE（Cursor・Antigravity・
 
 ## セットアップ（Cursor / Antigravity / Windsurf）
 
-VS Codeフォーク系IDEはOAuthブラウザフローを直接サポートしないため、`mcp-remote` をプロキシとして使います。  
-**前提**: Node.js v18以上がインストール済みであること
+**前提**: [Node.js](https://nodejs.org/) v18 以上が必要です（`node -v` で確認）
+
+VS Codeフォーク系IDEはOAuthブラウザフローを直接サポートしないため、`mcp-remote` をプロキシとして使います。
 
 以下の設定ファイルに追記してください：
 
