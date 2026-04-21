@@ -18,12 +18,25 @@ UTAGEのAPI操作知識をオープンソースとして公開し、コミュニ
 
 ## セットアップ
 
-```bash
-cp .env.example .env
-# .env を編集して UTAGE_API_KEY を設定
+MCPサーバーに接続するだけで使えます。APIキー設定は不要です。
+
+```json
+// Cursor: ~/.cursor/mcp.json
+// Antigravity: ~/.gemini/antigravity/mcp_config.json
+// Windsurf: ~/.codeium/windsurf/mcp_config.json
+{
+  "mcpServers": {
+    "utage-api": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://api.utage-system.com/mcp"]
+    }
+  }
+}
 ```
 
-→ 詳細は `setup/SKILL.md` を参照
+IDEを再起動すると初回のみブラウザでOAuth認証が開きます。
+
+→ 詳細・IDE別設定は `setup/SKILL.md` を参照
 
 ## 使い方
 
