@@ -39,7 +39,7 @@ setup/ フォルダの SKILL.md を参照してください
 | ファネル・LP・ページ要素  | `funnels/SKILL.md`   | `funnel_page_create`, `element_types_funnel`                    |
 | シナリオ管理         | `scenarios/SKILL.md` | `message_scenario_create`                                       |
 | 配信アカウント・ラベル・読者 | `accounts/SKILL.md`  | `message_account_list`, `message_label_create`                  |
-| メディア参照         | `media/SKILL.md`     | `media_video_list`                                              |
+| メディア参照・通常メディアアップロード | `media/SKILL.md`     | `media_list`, `media_upload_url`, `media_video_list`            |
 | エラー報告・フィードバック  | `report/SKILL.md`    | `report_discussion.py`                                          |
 
 
@@ -88,6 +88,9 @@ setup/ フォルダの SKILL.md を参照してください
 | --- | ----------------------- | ---------------------------------- |
 | 12  | `POST /actions` アクション作成 | **405 Method Not Allowed**（管理画面のみ） |
 | 13  | シナリオ作成で `name` フィールド    | **フィールド名は `title`** が正しい           |
+| 14  | HTMLメール要素を `properties` で包む | **実データはフラットに書く**。`properties` は定義レスポンス内のメタ情報 |
+| 15  | LINE/メールの条件キーを推測で書く | `message_condition_types` と `message_placeholder_list` で確認する |
+| 16  | 通常メディアアップロード後に完了通知しない | `media_upload_url` の後はストレージ送信し、最後に `media_complete` |
 
 
 ---
@@ -97,6 +100,5 @@ setup/ フォルダの SKILL.md を参照してください
 - **ライセンス**: MIT（スクリプト）/ CC BY 4.0（ドキュメント）
 - **対象**: UTAGE 公式 MCPサーバー + REST API v1
 - **メンテナー**: [@icloudaichi](https://github.com/icloudaichi)
-- **バージョン**: 0.2.0（2026-04-21）
+- **バージョン**: 0.3.0（2026-05-15）
 - **フィードバック**: [GitHub Discussions](https://github.com/icloudaichi/utage-mcp-guide/discussions)
-

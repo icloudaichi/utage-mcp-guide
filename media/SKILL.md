@@ -1,12 +1,17 @@
 # UTAGE AI Skill - media
 
-UTAGE内にアップロードされた動画・音声のURLを取得します。  
-※ メディアのアップロードはAPIに非対応（管理画面のみ）
+UTAGE内にアップロードされた通常メディア・動画・音声のURLを取得します。
+通常メディア（画像等）はMCPの署名付きURLフローでアップロード可能です。
+動画・音声アップロードは引き続き管理画面または別補助スクリプトで扱います。
 
 ## MCPツール
 
 | ツール名 | 操作 |
 |:---|:---|
+| `media_list` | 通常メディア一覧取得（keyword / folder_id で絞り込み可） |
+| `media_folder_list` | 通常メディアフォルダ一覧 |
+| `media_upload_url` | 通常メディアの署名付きアップロードURL発行 |
+| `media_complete` | 通常メディアアップロード完了通知 |
 | `media_video_list` | 動画一覧取得（keyword / folder_id で絞り込み可） |
 | `media_video_folder_list` | 動画フォルダ一覧 |
 | `media_audio_list` | 音声一覧取得 |
@@ -19,12 +24,19 @@ UTAGE内にアップロードされた動画・音声のURLを取得します。
 > → 全カテゴリ共通トラップはルートの SKILL.md を参照
 
 - 取得したURLをページ要素で使う場合: `video_id` は NG。必ず **`video_url`（絶対パスURL）** を使うこと
+- `media_upload_url` はアップロード用URLとメディアIDを発行するため、AIが自律実行する場合は事前に確認を取ること
+- アップロード後は必ず `media_complete(media_id)` を呼ぶこと。完了通知しないと管理画面に反映されない可能性があります
+- 動画・音声のアップロードは `media_video_list` / `media_audio_list` ではできません
 
 ---
 
 ## 補足: REST API（curl）
 
 ```bash
+# 通常メディア一覧（REST環境によってはMCP専用）
+curl -s "https://api.utage-system.com/v1/media" \
+  -H "Authorization: Bearer $UTAGE_API_KEY"
+
 # 動画一覧
 curl -s "https://api.utage-system.com/v1/media/videos" \
   -H "Authorization: Bearer $UTAGE_API_KEY"

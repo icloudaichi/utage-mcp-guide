@@ -11,6 +11,8 @@
 | `message_label_update` / `message_label_delete` | ラベル更新・削除 |
 | `message_common_reader_label_list` / `_create` / `_delete` | 読者へのラベル付与・削除 |
 | `message_reader_list_all` / `message_reader_list` / `message_reader_get` | 読者データ参照 |
+| `message_condition_types` | 読者絞り込みに使える条件キー・演算子の確認 |
+| `message_placeholder_list` | シナリオ別に絞り込み可能な読者項目の確認 |
 
 ---
 
@@ -29,6 +31,8 @@
 > → 全カテゴリ共通トラップはルートの SKILL.md を参照
 
 - 読者データの更新（メール変更等）は API 非対応。管理画面のみ
+- `message_reader_list_all` の条件キーは横断取得用に制限されます。シナリオ固有の読者項目で絞る場合は `message_reader_list` を使うこと
+- 読者項目で絞る前に `message_placeholder_list` の `is_filterable=true` を確認すること
 
 ---
 

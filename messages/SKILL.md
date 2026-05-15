@@ -13,6 +13,13 @@
 | `message_delete` | メッセージ削除 |
 | `message_test_send` | テスト送信 |
 | `message_stats_get` | 配信統計取得 |
+| `message_action_list` | アクション一覧取得（作成は不可） |
+| `message_tracking_list` / `message_tracking_stats` | 登録経路・トラッキング取得 |
+| `message_placeholder_list` | 置き換え文字・読者項目一覧取得 |
+| `message_condition_types` | 配信条件・読者絞り込み条件の定義取得 |
+| `message_types_line` | LINEメッセージタイプ定義取得 |
+| `message_line_sender_list` / `_get` / `_create` / `_update` / `_delete` | LINEカスタム送信者管理 |
+| `element_types_mail` / `element_types_mail_properties` | HTMLメール要素タイプ定義取得 |
 
 ---
 
@@ -26,6 +33,10 @@
 - **`send_type: "immediately"` のステップは API 経由で公開不可**。管理画面から手動公開するか、`send_date: 0` で代替
 - **PUT は全フィールド必須**。未指定フィールドは null にリセットされる。必ず `message_get` で現在値を取得してから、変更箇所だけ書き換えて送信すること
 - **メール本文には配信解除URL（`%cancel%` or `%cancelall%`）を必ず含める**こと。含めないとバリデーションエラー
+- **HTMLメールのelementsはフラット構造**。`element_types_mail_properties` の `properties` は定義一覧であり、作成データを `properties: {...}` で包まない
+- **読者絞り込み条件は推測しない**。`message_condition_types` と `message_placeholder_list` の `is_filterable=true` を確認してから使う
+- **アクション配信**（`channel: "action"`）は `message_action_list` で取得した `action_id` を使う。アクション自体の作成は管理画面のみ
+- **LINE送信者更新はPUTセマンティクス**。`message_line_sender_get` で現在値を取得し、`name` と `image_url` の両方を送る
 
 ---
 
@@ -84,6 +95,7 @@
 |:---|:---|:---|
 | `"immediately"` | 登録直後に送信 | 不要（send_date等は無視） |
 | `"scheduled"` | 指定日時に送信 | `send_date`（日数）+ `send_hour` + `send_min` |
+| `"scheduled_addition"` | 追加配信 | 追加配信用の日時・条件 |
 
 ---
 

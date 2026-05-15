@@ -36,6 +36,10 @@
 - **`padding_top` / `padding_bottom` は `col` に設定する**（section に設定しても効かない）
 - **PUT は破壊的上書き**。未指定フィールドは null にリセット。必ず `funnel_page_get` で現在値を取得してから送信
 - **日本語を含む JSON** は `--data-binary @file` で送信（パイプ経由はエンコードエラーの可能性）
+- **`content_type` は作成後に変更不可**。`elements` と `raw_html` は作成時に選ぶ
+- **`raw_html` は html/head/body タグ必須**。DOCTYPEは任意、最大4MB
+- **全幅ページ（`pc_width=100`）の背景色**はページの `background_color` で指定する。固定幅ページでは指定すると表示が崩れる場合があります
+- **全幅ページのコンテンツ幅**は `section.content_width` ではなく `row.width` で制御する
 
 ---
 
