@@ -47,7 +47,18 @@ curl -s "https://api.utage-system.com/v1/accounts" \
 curl -s "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/labels" \
   -H "Authorization: Bearer $UTAGE_API_KEY"
 
+# ラベル作成
+curl -s -X POST "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/labels" \
+  -H "Authorization: Bearer $UTAGE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "テストラベル"}'
+
 # 読者一覧
 curl -s "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/readers" \
   -H "Authorization: Bearer $UTAGE_API_KEY"
 ```
+
+2026-05-16 実操作確認:
+- MCP `message_label_create` / `message_label_list` 成功
+- REST `POST /accounts/{account_id}/labels` / `GET /accounts/{account_id}/labels` 成功
+- `message_reader_list` の `conditions` は `message_condition_types` と `message_placeholder_list.is_filterable` を確認してから使う

@@ -45,3 +45,15 @@ curl -s "https://api.utage-system.com/v1/media/videos" \
 curl -s "https://api.utage-system.com/v1/media/audios" \
   -H "Authorization: Bearer $UTAGE_API_KEY"
 ```
+
+## 通常メディアアップロードの実操作フロー
+
+2026-05-16 に以下のMCPフローで画像アップロードを確認済み。
+
+1. `media_upload_url(filename, filetype)` で `media_id` と `presigned_post` を取得
+2. `presigned_post.url` に対して `fields` と `file` を multipart POST
+3. ストレージ側が HTTP 204 を返す
+4. `media_complete(media_id)` を呼ぶ
+5. `media_list(keyword)` で反映を確認
+
+署名付きURL・署名フィールドは短時間で失効するため、ログやドキュメントへそのまま残さないこと。

@@ -46,3 +46,7 @@ curl -s -X POST "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios" 
   -H "Content-Type: application/json" \
   -d '{"title": "プロモーションシナリオ"}'
 ```
+
+2026-05-16 実操作確認:
+- MCP `message_scenario_create` 成功
+- REST `POST /accounts/{account_id}/scenarios` / `GET /accounts/{account_id}/scenarios` 成功
