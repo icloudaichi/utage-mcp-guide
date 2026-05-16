@@ -14,7 +14,7 @@ UTAGEのMCPサーバーを **VS Codeフォーク系IDE（Cursor・Antigravity・
 ## 特徴
 
 - **VS Codeフォーク系IDE向けMCPセットアップ**: `mcp-remote` 経由でOAuth認証を実現
-- **実機検証済みの落とし穴13件**を記録（公式ドキュメントの誤記・サイレント失敗を含む）
+- **実機検証済みの落とし穴16件**を記録（公式ドキュメントの誤記・サイレント失敗を含む）
 - MDファイルからステップメールを一括投入するワークフローを収録
 - エラー発見時は GitHub Discussions に自動報告
 
@@ -66,7 +66,7 @@ utage-mcp-guide/
 ├── funnels/          # ファネル・LP・ページ要素
 ├── scenarios/        # シナリオ管理
 ├── accounts/         # 配信アカウント・ラベル・読者
-├── media/            # メディア参照
+├── media/            # メディア参照・通常メディアアップロード
 ├── report/           # GitHub Discussionsへのフィードバック投稿
 └── setup/            # 初回セットアップ
 ```
