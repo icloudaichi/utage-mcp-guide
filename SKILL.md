@@ -31,6 +31,7 @@ setup/ フォルダの SKILL.md を参照してください
 
 目的に応じて対応するサブスキルを読み込んでください:
 
+> MCPサーバー側のツール定義は頻繁に増えます。作業開始時に `find_tools` を呼び、現行カタログとプレビュー機能を確認してください。
 
 | カテゴリ           | 参照先                  | MCPツール例                                                         |
 | -------------- | -------------------- | --------------------------------------------------------------- |
@@ -39,7 +40,7 @@ setup/ フォルダの SKILL.md を参照してください
 | ファネル・LP・ページ要素  | `funnels/SKILL.md`   | `funnel_page_create`, `element_types_funnel`                    |
 | シナリオ管理         | `scenarios/SKILL.md` | `message_scenario_create`                                       |
 | 配信アカウント・ラベル・読者 | `accounts/SKILL.md`  | `message_account_list`, `message_label_create`                  |
-| メディア参照・通常メディアアップロード | `media/SKILL.md`     | `media_list`, `media_upload_url`, `media_video_list`            |
+| メディア参照・アップロード | `media/SKILL.md`     | `media_upload_url`, `media_video_upload_url`, `media_audio_upload_url` |
 | エラー報告・フィードバック  | `report/SKILL.md`    | `report_discussion.py`                                          |
 
 
@@ -55,7 +56,11 @@ setup/ フォルダの SKILL.md を参照してください
 | #   | 症状                                   | 原因                                     | 正解                                                 |
 | --- | ------------------------------------ | -------------------------------------- | -------------------------------------------------- |
 | 1   | `validation_error: 送信タイプは必ず指定してください` | `send_type` を省略                        | `send_type: "scheduled"` or `"immediately"` を必ず付ける |
-| 2   | 即時配信のステップが公開できない                     | `send_type: "immediately"` はAPI経由で公開不可 | 管理画面から手動公開 or `send_date: 0` で代替                   |
+| 2   | 即時配信ステップを `reserved` に戻せない | `step_send_type: "immediately"` の安全制限に当たる | 既存値を確認し、必要なら `send_type: "immediately"` + `step_send_type: "none"` + `status: "reserved"` で復旧 |
+| 3   | 予約済みメッセージの本文や件名を直接更新すると409 | `status=reserved` は直接更新不可 | まず `status: "draft"` へ変更し、全量PUT後に `reserved` へ戻す |
+| 4   | `The X field must be present` | `message_update` で必須キー自体を省略 | `title`, `use_ab_test`, `action_id`, `shorten_domain`, `shorten_type`, `conditions`, `url_actions`, `mail/line/sms` は null/空配列でもキーを含める |
+| 5   | ABテスト件名Bが保存されない | `use_ab_test` だけONにした | `use_ab_test: 1` と `mail.subject_pattern_b` をセットで送る |
+| 6   | `channel` / `type` 変更で400 | 作成後変更不可のフィールドを書き換えた | 既存 `message_get` の値を維持する |
 
 
 ### ファネル要素 — プロパティ名の誤記
@@ -63,12 +68,13 @@ setup/ フォルダの SKILL.md を参照してください
 
 | #   | 要素            | ❌ 使えない                              | ✅ 正しい                                        | 症状            |
 | --- | ------------- | ----------------------------------- | -------------------------------------------- | ------------- |
-| 3   | `image`       | `image_src`                         | **`image_url`**                              | エラーなし・サイレント失敗 |
-| 4   | `video`       | `video_id`                          | **`video_url`（絶対パスURL）**                     | 保存されない        |
-| 5   | `table`       | `content`                           | **`body_rows` + `body_cols` + `table_data`** | キーが存在しない      |
-| 6   | `deadline`    | `target_datetime`                   | **`target_type`（必須）+ `target_date`**         | 受け付けられない      |
-| 7   | `accordion`   | `title`                             | **`content`（ヘッダー）+ `sub_content`**           | サイレント失敗       |
-| 8   | `form-button` | `button_text` / `button_text_color` | **`content` / `color`**                      | サイレント失敗       |
+| 7   | `image`       | `image_src`                         | **`image_url`**                              | エラーなし・サイレント失敗 |
+| 8   | `video`       | `video_id`                          | **`video_url`（絶対パスURL）**                     | 保存されない        |
+| 9   | `table`       | `content`                           | **`body_rows` + `body_cols` + `table_data`** | キーが存在しない      |
+| 10  | `deadline`    | `target_datetime`                   | **`target_type`（必須）+ `target_date`**         | 受け付けられない      |
+| 11  | `accordion`   | `title`                             | **`content`（ヘッダー）+ `sub_content`**           | サイレント失敗       |
+| 12  | `form-button` | `button_text` / `button_text_color` | **`content` / `color`**                      | サイレント失敗       |
+| 13  | `text` | `color` プロパティに頼った | `content` 内のインラインスタイルで指定する | 色が反映されない |
 
 
 ### ページAPI
@@ -76,21 +82,23 @@ setup/ フォルダの SKILL.md を参照してください
 
 | #   | 症状                         | 原因              | 対策                            |
 | --- | -------------------------- | --------------- | ----------------------------- |
-| 9   | PUT後に他の要素がnullリセット         | 変更箇所だけ送った       | PUT前に必ずGETして全フィールド含めて送信       |
-| 10  | `padding_top/bottom` が効かない | `section` に設定した | **`col`** に設定する               |
-| 11  | 日本語JSONでエンコードエラー           | パイプで渡した         | `--data-binary @file` でファイル経由 |
+| 14  | PUT後に他の要素がnullリセット         | 変更箇所だけ送った       | PUT前に必ずGETして全フィールド含めて送信       |
+| 15  | `padding_top/bottom` が効かない | `section` に設定した | **`col`** に設定する               |
+| 16  | 日本語JSONでエンコードエラー           | パイプで渡した         | `--data-binary @file` でファイル経由 |
+| 17  | フォームが全幅に広がって崩れる | `pc_width=100` のページでフォーム親幅を絞っていない | 親 `row.width` を指定する |
 
 
 ### API制限
 
 
-| #   | 操作                      | 結果                                 |
-| --- | ----------------------- | ---------------------------------- |
-| 12  | `POST /actions` アクション作成 | **405 Method Not Allowed**（管理画面のみ） |
-| 13  | シナリオ作成で `name` フィールド    | **フィールド名は `title`** が正しい           |
-| 14  | HTMLメール要素を `properties` で包む | **実データはフラットに書く**。`properties` は定義レスポンス内のメタ情報 |
-| 15  | LINE/メールの条件キーを推測で書く | `message_condition_types` と `message_placeholder_list` で確認する |
-| 16  | 通常メディアアップロード後に完了通知しない | `media_upload_url` の後はストレージ送信し、最後に `media_complete` |
+| #   | 症状・操作 | 原因・結果 | 対策 |
+| --- | --- | --- | --- |
+| 18  | `POST /actions` アクション作成 | **405 Method Not Allowed**（管理画面のみ） | `message_action_list` で既存アクションIDを取得して使う |
+| 19  | シナリオ作成で `name` フィールド | **フィールド名は `title`** が正しい | `message_scenario_create(title=...)` を使う |
+| 20  | HTMLメール要素を `properties` で包む | `properties` は定義レスポンス内のメタ情報 | **実データはフラットに書く** |
+| 21  | LINE/メールの条件キーを推測で書く | 存在しないキーは失敗またはスキップされる | `message_condition_types` と `message_placeholder_list` で確認する |
+| 22  | 読者一覧で `base_datetime` を使う | `base_datetime` は配信条件専用で読者検索ではスキップされる | 読者検索は `base_date` を使う |
+| 23  | メディアアップロード後に完了通知しない | upload-url 発行だけでは反映が完了しない | 通常は `media_complete`、動画は `media_video_complete`、音声は `media_audio_complete` |
 
 
 ---
@@ -100,5 +108,5 @@ setup/ フォルダの SKILL.md を参照してください
 - **ライセンス**: MIT（スクリプト）/ CC BY 4.0（ドキュメント）
 - **対象**: UTAGE 公式 MCPサーバー + REST API v1
 - **メンテナー**: [@icloudaichi](https://github.com/icloudaichi)
-- **バージョン**: 0.3.0（2026-05-15）
+- **バージョン**: 0.4.0（2026-06-08）
 - **フィードバック**: [GitHub Discussions](https://github.com/icloudaichi/utage-mcp-guide/discussions)

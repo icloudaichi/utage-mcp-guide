@@ -68,9 +68,10 @@
           {
             "type": "button",
             "content": "申し込む",
+            "button_color": "btn-green",
             "color": "#ffffff",
-            "background_color": "#e74c3c",
-            "href": "https://example.com/apply"
+            "link_type": "url",
+            "link_url": "https://example.com/apply"
           }
         ]
       }]
@@ -86,10 +87,14 @@
 使用可能な要素とプロパティは MCPツールで取得できます:
 
 ```
-element_types_funnel                    → 要素タイプ一覧
-element_types_funnel(include="form")    → フォーム要素も含む
+element_types_funnel                    → 基本要素タイプ一覧
+element_types_funnel(include="form,payment,event,webinar") → 拡張カテゴリも含む
 element_types_funnel_properties(types="text,button,image") → プロパティ定義
 ```
+
+HTMLメール要素は `element_types_mail` / `element_types_mail_properties` を使う。ファネル要素とメール要素は似ていますが、使えるプロパティが異なるため混在させないでください。
+
+`element_types_funnel_properties` のレスポンスには `global_common_properties` と `content_common_properties` が含まれます。個別要素の `properties` はその要素固有の定義で、作成・更新時のデータを `properties` キーで包む意味ではありません。
 
 ## フォーム付きLPの現行実機パターン
 
@@ -148,3 +153,7 @@ curl -s -X PUT \
   -H "Content-Type: application/json" \
   --data-binary @updated_page.json
 ```
+
+2026-06-08 実操作確認:
+- MCP `find_tools(category="funnel")` で funnel 系12ツールを確認
+- MCP `element_types_funnel(include="form,payment,event,webinar")` と `element_types_funnel_properties` の読み取り動作を確認

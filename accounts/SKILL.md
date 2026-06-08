@@ -2,14 +2,16 @@
 
 配信アカウント・ラベル・読者データを管理します。
 
+> これらは preview 扱いの `message_*` ツール群に含まれます。作業前に `find_tools(category="message")` で最新スキーマを確認してください。
+
 ## MCPツール
 
 | ツール名 | 操作 |
 |:---|:---|
-| `message_account_list` / `message_account_create` | アカウントCRUD |
+| `message_account_list` / `message_account_create` | アカウント一覧・作成 |
 | `message_label_list` / `message_label_create` / `message_label_get` | ラベル取得・作成 |
 | `message_label_update` / `message_label_delete` | ラベル更新・削除 |
-| `message_common_reader_label_list` / `_create` / `_delete` | 読者へのラベル付与・削除 |
+| `message_common_reader_label_list` / `message_common_reader_label_create` / `message_common_reader_label_delete` | 読者へのラベル付与・削除 |
 | `message_reader_list_all` / `message_reader_list` / `message_reader_get` | 読者データ参照 |
 | `message_condition_types` | 読者絞り込みに使える条件キー・演算子の確認 |
 | `message_placeholder_list` | シナリオ別に絞り込み可能な読者項目の確認 |
@@ -33,6 +35,7 @@
 - 読者データの更新（メール変更等）は API 非対応。管理画面のみ
 - `message_reader_list_all` の条件キーは横断取得用に制限されます。シナリオ固有の読者項目で絞る場合は `message_reader_list` を使うこと
 - 読者項目で絞る前に `message_placeholder_list` の `is_filterable=true` を確認すること
+- `base_datetime` は配信条件専用。読者一覧の `conditions` では使わず、日付で絞る場合は `base_date` を使うこと
 - REST/MCPの読者レスポンスでは `mail` / `name` が `null` になる場合があります。メールアドレス等のPII確認は管理画面CSVダウンロードが必要
 - REST `conditions` は `[{"rules":[...]}]` の配列形式。`{"rules":[...]}` は422
 
