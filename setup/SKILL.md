@@ -68,7 +68,7 @@ IDEを再起動後、AIに以下のように指示してみてください：
 
 > 「UTAGE MCPの `find_tools` を呼んで、カテゴリ別のツール一覧を見せて」
 
-2026-06-08時点の実機確認では、`find_tools` で funnel 12件、message 31件、media 12件、reference 6件の合計61ツールが返りました。message系の多くはプレビュー扱いです。
+2026-07-01時点の実機確認では、`find_tools` で funnel 17件、message 65件、media 12件、member 8件、reference 8件の合計110ツールが返りました。message系・member系・funnel統計系の多くはプレビュー扱いです。
 
 続けて読み取り系ツールを確認します:
 
@@ -79,9 +79,12 @@ IDEを再起動後、AIに以下のように指示してみてください：
 現行カタログに以下が見えない場合は、IDE再起動、MCP URL確認、必要に応じて認証キャッシュ削除を行ってから `find_tools` を再実行してください:
 
 - preview `message_*` ツール
+- preview `member_*` ツール
+- `funnel_stats_get` / `funnel_stats_daily` / `funnel_subscriber_list`
 - `media_upload_url` / `media_video_upload_url` / `media_audio_upload_url`
 - `media_complete` / `media_video_complete` / `media_audio_complete`
 - `element_types_mail` / `element_types_mail_properties`
+- `element_types_lesson` / `element_types_lesson_properties`
 
 ---
 

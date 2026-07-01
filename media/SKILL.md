@@ -30,6 +30,7 @@ UTAGE内にアップロードされた通常メディア・動画・音声のURL
 - `*_upload_url` はサーバー側にメディアIDを作成するため、AIが自律実行する場合は事前に確認を取ること
 - `presigned_post.url` と `presigned_post.fields` は署名付き情報。短時間で失効し、機密性もあるためログやドキュメントへそのまま残さないこと
 - アップロード後は必ず対応する `*_complete(media_id)` を呼ぶこと。完了通知しないと管理画面に反映されない可能性があります
+- 会員サイトレッスンの動画要素でUTAGE内動画を使う場合は `video_type: "app"` + `video_id` を使う。ファネルページ側の `video_url` ルールと混同しないこと
 
 ---
 
@@ -86,3 +87,7 @@ REST API:
 2026-06-08 実操作確認:
 - MCP `find_tools(category="media")` で media 系12ツールを確認
 - MCP `media_list` / `media_folder_list` / `media_video_list` / `media_video_folder_list` / `media_audio_list` / `media_audio_folder_list` の読み取り動作を確認
+
+2026-07-01 実操作確認:
+- MCP `media_list` / `media_folder_list` / `media_video_folder_list` / `media_audio_folder_list` の読み取り動作を再確認
+- `media_video_upload_url` / `media_audio_upload_url` はカタログ上で確認済み。ただしURL発行だけでメディアIDを作成する副作用があるため、実発行は人間確認後に行う

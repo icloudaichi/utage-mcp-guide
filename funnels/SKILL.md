@@ -11,6 +11,9 @@
 | `funnel_step_reorder` | ステップ並び替え |
 | `funnel_page_list` / `funnel_page_get` | ページ取得 |
 | `funnel_page_create` / `funnel_page_update` / `funnel_page_delete` | ページCRUD |
+| `funnel_stats_get` / `funnel_stats_daily` | ファネル統計取得 |
+| `funnel_subscriber_list` | ファネル登録者一覧取得 |
+| `funnel_tracking_list` / `funnel_tracking_stats` | 登録経路一覧・集計 |
 | `element_types_funnel` / `element_types_funnel_properties` | 要素タイプ定義取得 |
 
 ---
@@ -42,6 +45,7 @@
 - **全幅ページのコンテンツ幅**は `section.content_width` ではなく `row.width` で制御する
 - **ステップ並び替え**は全ステップID必須。ID不足・重複・余分ID・空配列は422
 - **フォーム付きLP**は現行実機では `form` 要素に `scenario_id` と `use_reader_item=1` を指定する方式が安定。`form-name` / `form-email` は未対応
+- **統計/登録者系は preview**。`funnel_subscriber_list` は氏名・連絡先を返す可能性があるため、検証ログには件数やフィールド構造だけ残す
 
 ---
 
@@ -155,5 +159,10 @@ curl -s -X PUT \
 ```
 
 2026-06-08 実操作確認:
-- MCP `find_tools(category="funnel")` で funnel 系12ツールを確認
 - MCP `element_types_funnel(include="form,payment,event,webinar")` と `element_types_funnel_properties` の読み取り動作を確認
+
+2026-07-01 実操作確認:
+- MCP `find_tools(category="funnel")` で funnel 系17ツールを確認
+- MCP `funnel_list` / `funnel_step_list` / `funnel_page_list` / `funnel_tracking_list` の読み取り動作を確認
+- MCP `funnel_stats_get` / `funnel_stats_daily` / `funnel_tracking_stats` の読み取り動作を確認
+- MCP `funnel_subscriber_list` はテスト用ファネルで0件レスポンスを確認（PIIなし）

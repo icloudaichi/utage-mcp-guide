@@ -13,6 +13,11 @@
 | `message_label_update` / `message_label_delete` | ラベル更新・削除 |
 | `message_common_reader_label_list` / `message_common_reader_label_create` / `message_common_reader_label_delete` | 読者へのラベル付与・削除 |
 | `message_reader_list_all` / `message_reader_list` / `message_reader_get` | 読者データ参照 |
+| `message_reader_item_list` / `message_reader_item_get` | 読者項目定義取得 |
+| `message_reader_item_create` / `message_reader_item_update` / `message_reader_item_delete` | 読者項目定義CRUD |
+| `message_form_item_list` / `message_form_item_get` | 登録フォーム項目取得 |
+| `message_form_item_create` / `message_form_item_update` / `message_form_item_delete` | 登録フォーム項目CRUD |
+| `message_form_item_reorder` / `message_form_item_bulk_create` | 登録フォーム項目の並び替え・一括追加 |
 | `message_condition_types` | 読者絞り込みに使える条件キー・演算子の確認 |
 | `message_placeholder_list` | シナリオ別に絞り込み可能な読者項目の確認 |
 
@@ -92,3 +97,6 @@ curl -sG "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios/SCENARIO
 - `message_reader_list` の `conditions` は `message_condition_types` と `message_placeholder_list.is_filterable` を確認してから使う
 - フォーム登録読者はREST/MCPで `mail/name=null` になる場合があるが、`mail` 条件検索には一致。CSVダウンロードではメールアドレス・登録元IP・ステータスまで取得できる
 - `message_common_reader_label_create` → `message_reader_list(label condition)` → `message_common_reader_label_delete` 成功
+- 2026-07-01 MCP `message_reader_item_list` / `message_reader_item_get` で読者項目定義の取得成功
+- 2026-07-01 MCP `message_form_item_list` / `message_form_item_get` で登録フォーム項目の取得成功
+- 2026-07-01 `message_placeholder_list(category="reader_item")` で、登録フォームに組み込まれた項目だけ `is_filterable=true` になることを確認

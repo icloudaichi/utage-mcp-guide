@@ -21,11 +21,20 @@
 | `message_label_update` / `message_label_delete` | ラベル更新・削除 |
 | `message_common_reader_label_list` / `message_common_reader_label_create` / `message_common_reader_label_delete` | 読者へのラベル付与・削除 |
 | `message_reader_list_all` / `message_reader_list` / `message_reader_get` | 読者データ参照 |
+| `message_reader_item_list` / `message_reader_item_get` | 読者項目定義取得 |
+| `message_reader_item_create` / `message_reader_item_update` / `message_reader_item_delete` | 読者項目定義CRUD |
+| `message_form_item_list` / `message_form_item_get` | 登録フォーム項目取得 |
+| `message_form_item_create` / `message_form_item_update` / `message_form_item_delete` | 登録フォーム項目CRUD |
+| `message_form_item_reorder` / `message_form_item_bulk_create` | 登録フォーム項目の並び替え・一括追加 |
 | `message_placeholder_list` | 置き換え文字・読者項目一覧取得 |
 | `message_condition_types` | 配信条件・読者絞り込み条件の定義取得 |
 | `message_types_line` | LINEメッセージタイプ定義取得 |
 | `message_line_sender_list` / `message_line_sender_get` / `message_line_sender_create` | LINEカスタム送信者取得・作成 |
 | `message_line_sender_update` / `message_line_sender_delete` | LINEカスタム送信者更新・削除 |
+| `message_line_friend_list` / `message_line_friend_get` | LINE友だち取得 |
+| `message_line_chat_message_list` / `message_line_chat_message_send` | LINE 1対1チャット履歴取得・送信 |
+| `message_line_template_list` | LINEテンプレート一覧 |
+| `message_line_friend_reader_create` / `message_line_friend_update` / `message_line_friend_menu_update` | LINE友だちの読者登録・属性/メニュー更新 |
 | `element_types_mail` / `element_types_mail_properties` | HTMLメール要素タイプ定義取得 |
 
 ---
@@ -46,6 +55,7 @@
 - **件名ABテスト**は `use_ab_test: 1` と `mail.subject_pattern_b` をセットで送る
 - **HTMLメールのelementsはフラット構造**。`element_types_mail_properties` の `properties` は定義一覧であり、作成データを `properties: {...}` で包まない
 - **読者絞り込み条件は推測しない**。`message_condition_types` と `message_placeholder_list` の `is_filterable=true` を確認してから使う
+- **`is_filterable=true` は登録フォーム組み込み済み項目だけ**。`message_reader_item_list` に存在しても、フォーム項目でなければ読者検索条件として無視される
 - **アクション配信**（`channel: "action"`）は `message_action_list` で取得した `action_id` を使う。アクション自体の作成は管理画面のみ
 - **LINE送信者更新はPUTセマンティクス**。`message_line_sender_get` で現在値を取得し、`name` と `image_url` の両方を送る
 - **LINE送信者の作成・削除は本番表示に影響する**。`message_line_sender_create` / `message_line_sender_delete` は事前確認を取る
@@ -239,3 +249,8 @@ curl -s -X DELETE "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios
 - 2026-06-08 MCP `find_tools(category="message")` で message 系31ツールを確認
 - 2026-06-08 MCP `message_list` / `message_get` / `message_action_list` の読み取り動作を確認
 - 2026-06-08 RESTで `use_ab_test: 1` + `mail.subject_pattern_b` を既存ステップに反映し、件名ABテスト保存を確認
+- 2026-07-01 MCP `find_tools(category="message")` で message 系65ツールを確認
+- 2026-07-01 MCP `message_account_list` / `message_scenario_list` / `message_action_list` の読み取り動作を確認
+- 2026-07-01 MCP `message_reader_item_list` / `message_reader_item_get` / `message_form_item_list` / `message_form_item_get` の読み取り動作を確認
+- 2026-07-01 MCP `message_placeholder_list(category="reader_item")` で、登録フォームに入っている `mail` のみ `is_filterable=true` になる挙動を確認
+- 2026-07-01 MCP `message_reader_list` / `message_reader_list_all` は検証シナリオで0件レスポンスを確認（PIIなし）

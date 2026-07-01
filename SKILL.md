@@ -41,8 +41,19 @@ setup/ フォルダの SKILL.md を参照してください
 | シナリオ管理         | `scenarios/SKILL.md` | `message_scenario_create`                                       |
 | 配信アカウント・ラベル・読者 | `accounts/SKILL.md`  | `message_account_list`, `message_label_create`                  |
 | メディア参照・アップロード | `media/SKILL.md`     | `media_upload_url`, `media_video_upload_url`, `media_audio_upload_url` |
+| 会員サイト・レッスン | `member/SKILL.md`    | `member_site_list`, `member_lesson_get`, `element_types_lesson` |
 | エラー報告・フィードバック  | `report/SKILL.md`    | `report_discussion.py`                                          |
 
+2026-07-01 実機確認時点の `find_tools` カタログ:
+
+| カテゴリ | 件数 | 備考 |
+|:---|---:|:---|
+| `funnel` | 17 | 統計・登録者・トラッキング系 preview を含む |
+| `message` | 65 | 読者項目、登録フォーム項目、LINE友だち/1対1チャット系 preview を含む |
+| `media` | 12 | 通常メディア・動画・音声の一覧/フォルダ/アップロードURL/完了通知 |
+| `member` | 8 | 会員サイト、コース、レッスングループ、レッスンCRUD preview |
+| `reference` | 8 | ファネル/メール/レッスン要素定義、LINEタイプ、条件定義 |
+| **合計** | **110** | `find_tools` 自体は除く |
 
 ---
 
@@ -69,7 +80,7 @@ setup/ フォルダの SKILL.md を参照してください
 | #   | 要素            | ❌ 使えない                              | ✅ 正しい                                        | 症状            |
 | --- | ------------- | ----------------------------------- | -------------------------------------------- | ------------- |
 | 7   | `image`       | `image_src`                         | **`image_url`**                              | エラーなし・サイレント失敗 |
-| 8   | `video`       | `video_id`                          | **`video_url`（絶対パスURL）**                     | 保存されない        |
+| 8   | ファネル `video` | `video_id`                          | **`video_url`（絶対パスURL）**                     | 保存されない        |
 | 9   | `table`       | `content`                           | **`body_rows` + `body_cols` + `table_data`** | キーが存在しない      |
 | 10  | `deadline`    | `target_datetime`                   | **`target_type`（必須）+ `target_date`**         | 受け付けられない      |
 | 11  | `accordion`   | `title`                             | **`content`（ヘッダー）+ `sub_content`**           | サイレント失敗       |
@@ -99,6 +110,7 @@ setup/ フォルダの SKILL.md を参照してください
 | 21  | LINE/メールの条件キーを推測で書く | 存在しないキーは失敗またはスキップされる | `message_condition_types` と `message_placeholder_list` で確認する |
 | 22  | 読者一覧で `base_datetime` を使う | `base_datetime` は配信条件専用で読者検索ではスキップされる | 読者検索は `base_date` を使う |
 | 23  | メディアアップロード後に完了通知しない | upload-url 発行だけでは反映が完了しない | 通常は `media_complete`、動画は `media_video_complete`、音声は `media_audio_complete` |
+| 24  | 会員サイトレッスンの動画要素でファネルのルールを流用する | レッスン `video` は `video_type` により必須キーが変わる | YouTube/Vimeo/Loom は `video_url`、UTAGE内動画は `video_type: "app"` + `video_id` |
 
 
 ---
@@ -108,5 +120,5 @@ setup/ フォルダの SKILL.md を参照してください
 - **ライセンス**: MIT（スクリプト）/ CC BY 4.0（ドキュメント）
 - **対象**: UTAGE 公式 MCPサーバー + REST API v1
 - **メンテナー**: [@icloudaichi](https://github.com/icloudaichi)
-- **バージョン**: 0.4.0（2026-06-08）
+- **バージョン**: 0.5.0（2026-07-01）
 - **フィードバック**: [GitHub Discussions](https://github.com/icloudaichi/utage-mcp-guide/discussions)
