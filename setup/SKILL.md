@@ -66,9 +66,29 @@ VS Codeフォーク系IDEはOAuthブラウザフローを直接サポートし�
 
 IDEを再起動後、AIに以下のように指示してみてください：
 
+> 「UTAGE MCPの `find_tools` を呼んで、カテゴリ別のツール一覧を見せて」
+
+2026-08-22時点の実機確認では、`find_tools` 自体を除き、funnel 23件、message 71件、media 12件、member 24件、event 18件、reference 8件、integration 1件の合計157ツールが返りました。`message_types_line` と `message_condition_types` は名前が `message_*` でも `reference` に分類されます。message系・member系・event系・funnel統計系の多くはプレビュー扱いです。
+
+`find_tools` の実質的な絞り込みは `category` だけです。`query` はやりたいことのメモとして受け付けられますが、現在は結果の絞り込みには使われません。
+
+続けて読み取り系ツールを確認します:
+
 > 「UTAGEのファネル一覧を取得して」
 
 ファネル一覧が返ればセットアップ完了です。
+
+現行カタログに以下が見えない場合は、IDE再起動、MCP URL確認、必要に応じて認証キャッシュ削除を行ってから `find_tools` を再実行してください:
+
+- preview `message_*` ツール
+- preview `member_*` ツール
+- preview `event_*` ツール
+- `funnel_action_*` ツール
+- `funnel_stats_get` / `funnel_stats_daily` / `funnel_subscriber_list`
+- `media_upload_url` / `media_video_upload_url` / `media_audio_upload_url`
+- `media_complete` / `media_video_complete` / `media_audio_complete`
+- `element_types_mail` / `element_types_mail_properties`
+- `element_types_lesson` / `element_types_lesson_properties`
 
 ---
 

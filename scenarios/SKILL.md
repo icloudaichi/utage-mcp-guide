@@ -2,6 +2,8 @@
 
 配信アカウント配下のシナリオを管理します。
 
+> `message_scenario_*` は preview 扱いの `message_*` ツール群に含まれます。作業前に `find_tools(category="message")` で最新スキーマを確認してください。
+
 ## MCPツール
 
 | ツール名 | 操作 |

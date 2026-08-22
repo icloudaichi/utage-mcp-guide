@@ -31,6 +31,7 @@ setup/ フォルダの SKILL.md を参照してください
 
 目的に応じて対応するサブスキルを読み込んでください:
 
+> MCPサーバー側のツール定義は頻繁に増えます。作業開始時に `find_tools(category="...")` を呼び、現行カタログとプレビュー機能を確認してください。`query` は現在、結果の絞り込みには使われません。
 
 | カテゴリ           | 参照先                  | MCPツール例                                                         |
 | -------------- | -------------------- | --------------------------------------------------------------- |
@@ -39,9 +40,36 @@ setup/ フォルダの SKILL.md を参照してください
 | ファネル・LP・ページ要素  | `funnels/SKILL.md`   | `funnel_page_create`, `element_types_funnel`                    |
 | シナリオ管理         | `scenarios/SKILL.md` | `message_scenario_create`                                       |
 | 配信アカウント・ラベル・読者 | `accounts/SKILL.md`  | `message_account_list`, `message_label_create`                  |
-| メディア参照・通常メディアアップロード | `media/SKILL.md`     | `media_list`, `media_upload_url`, `media_video_list`            |
+| メディア参照・アップロード | `media/SKILL.md`     | `media_upload_url`, `media_video_upload_url`, `media_audio_upload_url` |
+| 会員サイト・レッスン | `member/SKILL.md`    | `member_site_list`, `member_lesson_get`, `element_types_lesson` |
+| イベント・予約管理 | `event/SKILL.md` | `event_list`, `event_schedule_list`, `event_applicant_list` |
 | エラー報告・フィードバック  | `report/SKILL.md`    | `report_discussion.py`                                          |
 
+2026-08-22 実機確認時点の `find_tools` カタログ:
+
+| カテゴリ | 件数 | 備考 |
+|:---|---:|:---|
+| `funnel` | 23 | CRUD、アクション、統計・登録者・トラッキング系 preview を含む |
+| `message` | 71 | 配信、読者、フォーム、LINE、アクション、統計系 preview |
+| `media` | 12 | 通常メディア・動画・音声の一覧/フォルダ/アップロードURL/完了通知 |
+| `member` | 24 | 会員サイト、コース/グループ、バンドル、レッスンCRUD preview |
+| `event` | 18 | イベント、日程、カレンダー、担当者、申込者、フォーム preview |
+| `reference` | 8 | ファネル/メール/レッスン要素定義、LINEタイプ、条件定義 |
+| `integration` | 1 | Googleスプレッドシート連携アカウント一覧 |
+| **合計** | **157** | `find_tools` 自体は除く |
+
+`reference` / `integration` の全ツール:
+
+| ツール名 | 用途 |
+|:---|:---|
+| `element_types_funnel` / `element_types_funnel_properties` | ファネル要素タイプ・プロパティ定義 |
+| `element_types_lesson` / `element_types_lesson_properties` | レッスン要素タイプ・プロパティ定義 |
+| `element_types_mail` / `element_types_mail_properties` | HTMLメール要素タイプ・プロパティ定義 |
+| `message_types_line` | LINEメッセージタイプ定義 |
+| `message_condition_types` | 配信条件タイプ定義 |
+| `google_spreadsheet_account_list` | Googleスプレッドシート連携アカウント一覧 |
+
+2026-08-22には `funnel_list`、`message_account_list`、`media_list`、`member_site_list`、`event_list`、`google_spreadsheet_account_list`、`element_types_funnel` の読み取り応答を確認しました。個人情報を返し得る一覧は検証対象から除外しています。
 
 ---
 
@@ -55,7 +83,11 @@ setup/ フォルダの SKILL.md を参照してください
 | #   | 症状                                   | 原因                                     | 正解                                                 |
 | --- | ------------------------------------ | -------------------------------------- | -------------------------------------------------- |
 | 1   | `validation_error: 送信タイプは必ず指定してください` | `send_type` を省略                        | `send_type: "scheduled"` or `"immediately"` を必ず付ける |
-| 2   | 即時配信のステップが公開できない                     | `send_type: "immediately"` はAPI経由で公開不可 | 管理画面から手動公開 or `send_date: 0` で代替                   |
+| 2   | 即時配信ステップを `reserved` に戻せない | `step_send_type: "immediately"` の安全制限に当たる | 既存値を確認し、必要なら `send_type: "immediately"` + `step_send_type: "none"` + `status: "reserved"` で復旧 |
+| 3   | `sending` / `completed` のメッセージを更新すると409 | 配信中・配信済みは更新不可 | `draft` / `reserved` の間に更新する。`reserved` の日時・条件・ABテスト変更時はキューが自動再作成される |
+| 4   | 配列項目を一部だけ送って既存値が消える | `conditions` / `url_actions` / `line.messages` は指定時に全件置換 | 既存値を維持する場合は省略し、変更する場合は完成した配列を送る |
+| 5   | ABテスト件名Bが保存されない | `use_ab_test` だけONにした | `use_ab_test: 1` と `mail.subject_pattern_b` をセットで送る |
+| 6   | `channel` / `type` 変更で400 | 作成後変更不可のフィールドを書き換えた | 既存 `message_get` の値を維持する |
 
 
 ### ファネル要素 — プロパティ名の誤記
@@ -63,12 +95,13 @@ setup/ フォルダの SKILL.md を参照してください
 
 | #   | 要素            | ❌ 使えない                              | ✅ 正しい                                        | 症状            |
 | --- | ------------- | ----------------------------------- | -------------------------------------------- | ------------- |
-| 3   | `image`       | `image_src`                         | **`image_url`**                              | エラーなし・サイレント失敗 |
-| 4   | `video`       | `video_id`                          | **`video_url`（絶対パスURL）**                     | 保存されない        |
-| 5   | `table`       | `content`                           | **`body_rows` + `body_cols` + `table_data`** | キーが存在しない      |
-| 6   | `deadline`    | `target_datetime`                   | **`target_type`（必須）+ `target_date`**         | 受け付けられない      |
-| 7   | `accordion`   | `title`                             | **`content`（ヘッダー）+ `sub_content`**           | サイレント失敗       |
-| 8   | `form-button` | `button_text` / `button_text_color` | **`content` / `color`**                      | サイレント失敗       |
+| 7   | `image`       | `image_src`                         | **`image_url`**                              | エラーなし・サイレント失敗 |
+| 8   | ファネル `video` | `video_id`                          | **`video_url`（絶対パスURL）**                     | 保存されない        |
+| 9   | `table`       | `content`                           | **`body_rows` + `body_cols` + `table_data`** | キーが存在しない      |
+| 10  | `deadline`    | `target_datetime`                   | **`target_type`（必須）+ `target_date`**         | 受け付けられない      |
+| 11  | `accordion`   | `title`                             | **`content`（ヘッダー）+ `sub_content`**           | サイレント失敗       |
+| 12  | `form-button` | `button_text` / `button_text_color` | **`content` / `color`**                      | サイレント失敗       |
+| 13  | `text` | `color` プロパティに頼った | `content` 内のインラインスタイルで指定する | 色が反映されない |
 
 
 ### ページAPI
@@ -76,21 +109,24 @@ setup/ フォルダの SKILL.md を参照してください
 
 | #   | 症状                         | 原因              | 対策                            |
 | --- | -------------------------- | --------------- | ----------------------------- |
-| 9   | PUT後に他の要素がnullリセット         | 変更箇所だけ送った       | PUT前に必ずGETして全フィールド含めて送信       |
-| 10  | `padding_top/bottom` が効かない | `section` に設定した | **`col`** に設定する               |
-| 11  | 日本語JSONでエンコードエラー           | パイプで渡した         | `--data-binary @file` でファイル経由 |
+| 14  | ページ更新で他の要素が消える | `elements` は指定時に配列全体が置換される | 更新前にGETし、変更後の全要素を `elements` に含める |
+| 15  | `padding_top/bottom` が効かない | `section` に設定した | **`col`** に設定する               |
+| 16  | 日本語JSONでエンコードエラー           | パイプで渡した         | `--data-binary @file` でファイル経由 |
+| 17  | フォームが全幅に広がって崩れる | `pc_width=100` のページでフォーム親幅を絞っていない | 親 `row.width` を指定する |
 
 
 ### API制限
 
 
-| #   | 操作                      | 結果                                 |
-| --- | ----------------------- | ---------------------------------- |
-| 12  | `POST /actions` アクション作成 | **405 Method Not Allowed**（管理画面のみ） |
-| 13  | シナリオ作成で `name` フィールド    | **フィールド名は `title`** が正しい           |
-| 14  | HTMLメール要素を `properties` で包む | **実データはフラットに書く**。`properties` は定義レスポンス内のメタ情報 |
-| 15  | LINE/メールの条件キーを推測で書く | `message_condition_types` と `message_placeholder_list` で確認する |
-| 16  | 通常メディアアップロード後に完了通知しない | `media_upload_url` の後はストレージ送信し、最後に `media_complete` |
+| #   | 症状・操作 | 原因・結果 | 対策 |
+| --- | --- | --- | --- |
+| 18  | 配信アクションとファネルアクションを混同する | 現行MCPは両方のCRUDに対応するが別リソース | 配信後処理は `message_action_*`、フォーム・決済後処理は `funnel_action_*` を使う |
+| 19  | シナリオ作成で `name` フィールド | **フィールド名は `title`** が正しい | `message_scenario_create(title=...)` を使う |
+| 20  | HTMLメール要素を `properties` で包む | `properties` は定義レスポンス内のメタ情報 | **実データはフラットに書く** |
+| 21  | LINE/メールの条件キーを推測で書く | 存在しないキーは失敗またはスキップされる | `message_condition_types` と `message_placeholder_list` で確認する |
+| 22  | 読者一覧で `base_datetime` を使う | `base_datetime` は配信条件専用で読者検索ではスキップされる | 読者検索は `base_date` を使う |
+| 23  | メディアアップロード後に完了通知しない | upload-url 発行だけでは反映が完了しない | 通常は `media_complete`、動画は `media_video_complete`、音声は `media_audio_complete` |
+| 24  | 会員サイトレッスンの動画要素でファネルのルールを流用する | レッスン `video` は `video_type` により必須キーが変わる | YouTube/Vimeo/Loom は `video_url`、UTAGE内動画は `video_type: "app"` + `video_id` |
 
 
 ---
@@ -100,5 +136,5 @@ setup/ フォルダの SKILL.md を参照してください
 - **ライセンス**: MIT（スクリプト）/ CC BY 4.0（ドキュメント）
 - **対象**: UTAGE 公式 MCPサーバー + REST API v1
 - **メンテナー**: [@icloudaichi](https://github.com/icloudaichi)
-- **バージョン**: 0.3.0（2026-05-15）
+- **バージョン**: 0.6.0（2026-08-22）
 - **フィードバック**: [GitHub Discussions](https://github.com/icloudaichi/utage-mcp-guide/discussions)
