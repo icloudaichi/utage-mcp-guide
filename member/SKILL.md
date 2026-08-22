@@ -7,8 +7,15 @@
 
 | ツール名 | 操作 |
 |:---|:---|
-| `member_site_list` | 会員サイト一覧取得 |
-| `member_course_list` | サイト配下のコース一覧取得 |
+| `member_site_list` / `member_site_get` | 会員サイト一覧・詳細取得 |
+| `member_site_create` / `member_site_update` / `member_site_delete` | 会員サイトCRUD |
+| `member_site_reorder` | 会員サイト並び替え |
+| `member_course_list` / `member_course_get` | サイト配下のコース一覧・詳細取得 |
+| `member_course_create` / `member_course_update` / `member_course_delete` | コースCRUD |
+| `member_course_reorder` | コース並び替え・グループ振り分け |
+| `member_course_group_list` / `member_course_group_get` | コースグループ一覧・詳細取得 |
+| `member_course_group_create` / `member_course_group_update` / `member_course_group_delete` | コースグループCRUD |
+| `member_bundle_list` | バンドル（講座セット）一覧取得 |
 | `member_lesson_group_list` | コース配下のレッスングループ一覧取得 |
 | `member_lesson_list` | コース配下のレッスン一覧取得 |
 | `member_lesson_get` | レッスン詳細取得（element_id付き要素ツリー含む） |
@@ -85,8 +92,11 @@ UTAGE内動画:
 
 ## 実操作確認
 
+2026-08-22 カタログ確認:
+- MCP `find_tools(category="member")` で member 系24ツールを確認
+- 会員サイト、コース、コースグループ、バンドル、レッスンの公開スキーマを確認（書き込み操作は未実行）
+
 2026-07-01 実操作確認:
-- MCP `find_tools(category="member")` で member 系8ツールを確認
 - MCP `member_site_list` / `member_course_list` / `member_lesson_group_list` / `member_lesson_list` の読み取り動作を確認
 - MCP `member_lesson_get` でレッスン詳細と `element_id` 付き要素ツリーを確認
 - MCP `element_types_lesson` でレッスン要素20種類を確認

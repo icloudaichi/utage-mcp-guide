@@ -11,6 +11,9 @@
 | `funnel_step_reorder` | ステップ並び替え |
 | `funnel_page_list` / `funnel_page_get` | ページ取得 |
 | `funnel_page_create` / `funnel_page_update` / `funnel_page_delete` | ページCRUD |
+| `funnel_action_list` / `funnel_action_get` | ファネルアクション一覧・詳細取得 |
+| `funnel_action_create` / `funnel_action_update` / `funnel_action_delete` | ファネルアクションCRUD |
+| `funnel_action_group_list` | アクション整理用グループ一覧取得 |
 | `funnel_stats_get` / `funnel_stats_daily` | ファネル統計取得 |
 | `funnel_subscriber_list` | ファネル登録者一覧取得 |
 | `funnel_tracking_list` / `funnel_tracking_stats` | 登録経路一覧・集計 |
@@ -37,7 +40,8 @@
 
 - **要素の階層ルール**: section の直下に text 等を置くのは NG。必ず `section > row > col > コンテンツ要素` の順
 - **`padding_top` / `padding_bottom` は `col` に設定する**（section に設定しても効かない）
-- **PUT は破壊的上書き**。未指定フィールドは null にリセット。必ず `funnel_page_get` で現在値を取得してから送信
+- **ページ更新は部分更新**。省略フィールドは維持されるが、`elements` を指定すると配列全体が置換されるため、必ず `funnel_page_get` で現在の要素を取得してから編集する
+- **ファネルアクションと配信アクションは別物**。フォーム送信・決済完了後の処理は `funnel_action_*`、メッセージ配信後の処理は `message_action_*` を使う
 - **日本語を含む JSON** は `--data-binary @file` で送信（パイプ経由はエンコードエラーの可能性）
 - **`content_type` は作成後に変更不可**。`elements` と `raw_html` は作成時に選ぶ
 - **`raw_html` は html/head/body タグ必須**。DOCTYPEは任意、最大4MB
@@ -150,7 +154,7 @@ curl -s -X POST \
   -H "Content-Type: application/json" \
   --data-binary @page.json
 
-# ページ更新（⚠️ 必ずGETして全フィールドを含めること）
+# ページ更新（⚠️ elementsを変更する場合はGETして全要素を含めること）
 curl -s -X PUT \
   "https://api.utage-system.com/v1/funnels/FUNNEL_ID/steps/STEP_ID/pages/PAGE_ID" \
   -H "Authorization: Bearer $UTAGE_API_KEY" \
@@ -161,8 +165,11 @@ curl -s -X PUT \
 2026-06-08 実操作確認:
 - MCP `element_types_funnel(include="form,payment,event,webinar")` と `element_types_funnel_properties` の読み取り動作を確認
 
+2026-08-22 カタログ確認:
+- MCP `find_tools(category="funnel")` で funnel 系23ツールを確認
+- `funnel_action_list/create/get/update/delete/group_list` の公開スキーマを確認（書き込み操作は未実行）
+
 2026-07-01 実操作確認:
-- MCP `find_tools(category="funnel")` で funnel 系17ツールを確認
 - MCP `funnel_list` / `funnel_step_list` / `funnel_page_list` / `funnel_tracking_list` の読み取り動作を確認
 - MCP `funnel_stats_get` / `funnel_stats_daily` / `funnel_tracking_stats` の読み取り動作を確認
 - MCP `funnel_subscriber_list` はテスト用ファネルで0件レスポンスを確認（PIIなし）

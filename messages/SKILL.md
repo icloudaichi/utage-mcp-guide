@@ -8,19 +8,31 @@
 
 | ツール名 | 操作 |
 |:---|:---|
+| `message_account_list` / `message_account_create` | 配信アカウント一覧・作成 |
+| `message_scenario_list` / `message_scenario_create` | シナリオ一覧・作成 |
 | `message_list` | メッセージ一覧取得 |
 | `message_get` | メッセージ詳細取得 |
 | `message_create` | メッセージ作成 |
-| `message_update` | メッセージ更新（PUT: 全フィールド必須） |
+| `message_update` | メッセージ部分更新 |
 | `message_delete` | メッセージ削除 |
 | `message_test_send` | テスト送信 |
 | `message_stats_get` | 配信統計取得 |
-| `message_action_list` | アクション一覧取得（作成は不可） |
+| `message_scenario_stats_list` | シナリオ内メッセージ横断の配信統計取得 |
+| `message_action_list` / `message_action_get` | 配信アクション一覧・詳細取得 |
+| `message_action_create` / `message_action_update` / `message_action_delete` | 配信アクションCRUD |
+| `message_action_group_list` | 配信アクションのグループ一覧取得 |
 | `message_tracking_list` / `message_tracking_stats` | 登録経路・トラッキング取得 |
 | `message_label_list` / `message_label_create` / `message_label_get` | ラベル取得・作成 |
 | `message_label_update` / `message_label_delete` | ラベル更新・削除 |
 | `message_common_reader_label_list` / `message_common_reader_label_create` / `message_common_reader_label_delete` | 読者へのラベル付与・削除 |
+| `message_common_reader_get` / `message_common_reader_update` | 共通読者の取得・部分更新 |
+| `message_common_reader_scenario_list` | 共通読者の登録シナリオ一覧取得 |
 | `message_reader_list_all` / `message_reader_list` / `message_reader_get` | 読者データ参照 |
+| `message_reader_create` / `message_reader_update` | 読者の作成・部分更新 |
+| `message_reader_label_list` / `message_reader_label_create` / `message_reader_label_delete` | シナリオ読者のラベル取得・付与・解除 |
+| `message_reader_scenario_list` | 同一読者の他シナリオ一覧取得 |
+| `message_reader_queue_list` / `message_reader_sent_list` | 読者の配信予約・配信済み一覧取得 |
+| `message_reader_open_list` / `message_reader_click_list` | 読者の開封・クリック履歴取得 |
 | `message_reader_item_list` / `message_reader_item_get` | 読者項目定義取得 |
 | `message_reader_item_create` / `message_reader_item_update` / `message_reader_item_delete` | 読者項目定義CRUD |
 | `message_form_item_list` / `message_form_item_get` | 登録フォーム項目取得 |
@@ -34,6 +46,7 @@
 | `message_line_friend_list` / `message_line_friend_get` | LINE友だち取得 |
 | `message_line_chat_message_list` / `message_line_chat_message_send` | LINE 1対1チャット履歴取得・送信 |
 | `message_line_template_list` | LINEテンプレート一覧 |
+| `message_line_richmenu_list` | LINEリッチメニュー一覧 |
 | `message_line_friend_reader_create` / `message_line_friend_update` / `message_line_friend_menu_update` | LINE友だちの読者登録・属性/メニュー更新 |
 | `element_types_mail` / `element_types_mail_properties` | HTMLメール要素タイプ定義取得 |
 
@@ -47,17 +60,17 @@
 
 - **`send_type` は必須**。省略すると `validation_error`。値は `"scheduled"` or `"immediately"`
 - **即時ステップの安全制限**。`send_type: "immediately"` 自体は使えるが、`step_send_type: "immediately"` のまま `reserved` へ戻すと `safety_restriction` になる場合がある。既存値を確認し、必要なら `step_send_type: "none"` で復旧する
-- **PUT は全フィールド必須**。未指定フィールドは null にリセットされる。必ず `message_get` で現在値を取得してから、変更箇所だけ書き換えて送信すること
-- **予約済みメッセージは直接編集できない**。`status=reserved` の本文・件名・条件等を変える場合は、まず `status: "draft"` にするPUTを送り、再取得してから変更済み全量payloadで `status: "reserved"` に戻す
-- **`message_update` のキー省略不可**。`title`, `use_ab_test`, `action_id`, `shorten_domain`, `shorten_type`, `conditions`, `url_actions`, および該当チャンネルの `mail` / `line` / `sms` は null や空配列でもキーを含める
+- **`message_update` は部分更新**。指定したフィールドだけが変わり、省略フィールドは維持される。空bodyはno-op
+- **`conditions` / `url_actions` / `line.messages` は指定時に全件置換**。既存値を維持する場合はキー自体を省略する
+- **配信中・配信済みは更新不可**。`status=sending/completed` は409。`reserved` の配信日時・条件・ABテスト変更時はキューが自動再作成され、コンテンツのみの変更ではキューが維持される
 - **`channel` / `type` は作成後変更不可**。既存 `message_get` の値を維持する
 - **メール本文には配信解除URL（`%cancel%` or `%cancelall%`）を必ず含める**こと。含めないとバリデーションエラー
 - **件名ABテスト**は `use_ab_test: 1` と `mail.subject_pattern_b` をセットで送る
 - **HTMLメールのelementsはフラット構造**。`element_types_mail_properties` の `properties` は定義一覧であり、作成データを `properties: {...}` で包まない
 - **読者絞り込み条件は推測しない**。`message_condition_types` と `message_placeholder_list` の `is_filterable=true` を確認してから使う
 - **`is_filterable=true` は登録フォーム組み込み済み項目だけ**。`message_reader_item_list` に存在しても、フォーム項目でなければ読者検索条件として無視される
-- **アクション配信**（`channel: "action"`）は `message_action_list` で取得した `action_id` を使う。アクション自体の作成は管理画面のみ
-- **LINE送信者更新はPUTセマンティクス**。`message_line_sender_get` で現在値を取得し、`name` と `image_url` の両方を送る
+- **アクション配信**（`channel: "action"`）は `message_action_list` で取得した `action_id` を使う。配信アクション自体も `message_action_create/update/delete` で管理できる
+- **LINE送信者更新は部分更新**。`name` / `icon_url` の指定した項目だけが変わり、省略項目は維持される。`icon_url` はHTTPSかつPNG形式
 - **LINE送信者の作成・削除は本番表示に影響する**。`message_line_sender_create` / `message_line_sender_delete` は事前確認を取る
 - **テスト送信**は `message_test_send` を使う。`step` / `reminder` でも即時送信されるため、本番読者宛では使わない
 
@@ -74,7 +87,7 @@
   "channel": "mail",
   "type": "step",
   "send_type": "scheduled",
-  "send_date": 2,
+  "send_day": 2,
   "send_hour": 18,
   "send_min": 0,
   "title": "管理名",
@@ -97,7 +110,7 @@
   "channel": "line",
   "type": "step",
   "send_type": "scheduled",
-  "send_date": 1,
+  "send_day": 1,
   "send_hour": 18,
   "send_min": 0,
   "title": "LINE 2通目",
@@ -116,34 +129,18 @@
 
 | 値 | 意味 | 追加パラメータ |
 |:---|:---|:---|
-| `"immediately"` | 登録直後に送信 | 不要（send_date等は無視） |
-| `"scheduled"` | 指定日時に送信 | `send_date`（日数）+ `send_hour` + `send_min` |
+| `"immediately"` | 登録直後に送信 | 不要（`send_day` 等は無視） |
+| `"scheduled"` | 指定日時に送信 | step/reminderは `send_day`（日数）、broadcastは `send_date`（日付）+ `send_hour` + `send_min` |
 | `"scheduled_addition"` | 追加配信 | 追加配信用の日時・条件 |
 
 ### message_update の安全な更新手順
 
 1. `message_get(account_id, scenario_id, message_id)` で現在値を取得
-2. 予約済みなら、現在値をもとに `status: "draft"` だけ変えた全量payloadを `message_update` に送る
-3. 再度 `message_get` でdraft状態の現在値を取得
-4. 変更箇所を反映し、必須キーをすべて含めて `message_update`
-5. 稼働させる場合は `status: "reserved"` に戻し、最後に `message_get` で確認
+2. 予約解除が必要なら `status: "draft"` だけを `message_update` に送る
+3. 必要なフィールドだけを部分更新する。配列項目を変える場合は完成した配列を送る
+4. 稼働させる場合は `status: "reserved"` に戻し、最後に `message_get` で確認する
 
-最低限維持するトップレベルキー。実際の更新では、`message_get` で得た `mail` / `line` / `sms` の中身も省略せず保持します。
-
-```json
-{
-  "title": "...",
-  "use_ab_test": 0,
-  "action_id": null,
-  "shorten_domain": null,
-  "shorten_type": "shorten_url",
-  "conditions": [],
-  "url_actions": [],
-  "mail": {}
-}
-```
-
-LINEなら `mail` ではなく `line`、SMSなら `sms` を含める。即時ステップで `safety_restriction` が出る場合は、`send_type: "immediately"` は維持しつつ `step_send_type: "none"` を試す。
+`conditions` / `url_actions` / `line.messages` は、キーを指定すると全件置換されます。維持したい場合は省略してください。即時ステップで `safety_restriction` が出る場合は、`send_type: "immediately"` は維持しつつ `step_send_type: "none"` を試します。
 
 ### HTMLメール elements の形
 
@@ -197,7 +194,7 @@ scenario_id: SCENARIO_ID
 channel: mail
 type: step
 send_type: scheduled
-send_date: 2
+send_day: 2
 send_hour: 18
 send_min: 0
 title: 3通目：2日後18時
@@ -231,7 +228,7 @@ curl -s -X POST "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios/S
 curl -s "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios/SCENARIO_ID/messages/MESSAGE_ID" \
   -H "Authorization: Bearer $UTAGE_API_KEY"
 
-# メッセージ更新（PUT: 全フィールド必須。title/use_ab_test/action_id/shorten_domain/shorten_type/conditions/url_actions/mail等を省略しない）
+# メッセージ更新（部分更新。conditions/url_actions/line.messagesは指定時に全件置換）
 curl -s -X PUT "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios/SCENARIO_ID/messages/MESSAGE_ID" \
   -H "Authorization: Bearer $UTAGE_API_KEY" \
   -H "Content-Type: application/json" \
@@ -249,6 +246,8 @@ curl -s -X DELETE "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios
 - 2026-06-08 MCP `find_tools(category="message")` で message 系31ツールを確認
 - 2026-06-08 MCP `message_list` / `message_get` / `message_action_list` の読み取り動作を確認
 - 2026-06-08 RESTで `use_ab_test: 1` + `mail.subject_pattern_b` を既存ステップに反映し、件名ABテスト保存を確認
+- 2026-08-22 MCP `find_tools(category="message")` で message カテゴリ71ツールを確認（関連する `message_types_line` / `message_condition_types` は reference カテゴリ）
+- 2026-08-22 部分更新、配列の全件置換、配信アクションCRUD、LINE友だち関連の公開スキーマを確認（書き込み操作は未実行）
 - 2026-07-01 MCP `find_tools(category="message")` で message 系65ツールを確認
 - 2026-07-01 MCP `message_account_list` / `message_scenario_list` / `message_action_list` の読み取り動作を確認
 - 2026-07-01 MCP `message_reader_item_list` / `message_reader_item_get` / `message_form_item_list` / `message_form_item_get` の読み取り動作を確認

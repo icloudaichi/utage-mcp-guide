@@ -12,7 +12,11 @@
 | `message_label_list` / `message_label_create` / `message_label_get` | ラベル取得・作成 |
 | `message_label_update` / `message_label_delete` | ラベル更新・削除 |
 | `message_common_reader_label_list` / `message_common_reader_label_create` / `message_common_reader_label_delete` | 読者へのラベル付与・削除 |
+| `message_common_reader_get` / `message_common_reader_update` | 共通読者の取得・部分更新 |
+| `message_common_reader_scenario_list` | 共通読者の登録シナリオ一覧取得 |
 | `message_reader_list_all` / `message_reader_list` / `message_reader_get` | 読者データ参照 |
+| `message_reader_create` / `message_reader_update` | シナリオ読者の作成・部分更新 |
+| `message_reader_label_list` / `message_reader_label_create` / `message_reader_label_delete` | シナリオ読者のラベル取得・付与・解除 |
 | `message_reader_item_list` / `message_reader_item_get` | 読者項目定義取得 |
 | `message_reader_item_create` / `message_reader_item_update` / `message_reader_item_delete` | 読者項目定義CRUD |
 | `message_form_item_list` / `message_form_item_get` | 登録フォーム項目取得 |
@@ -37,7 +41,9 @@
 
 > → 全カテゴリ共通トラップはルートの SKILL.md を参照
 
-- 読者データの更新（メール変更等）は API 非対応。管理画面のみ
+- `message_reader_update` は部分更新。読者項目は `scenario_fields`（シナリオ固有）と `common_fields`（同一人物の全シナリオに波及）に分け、指定したキーだけを更新する
+- `message_common_reader_update` の共通項目・メモ更新は同一人物に波及するため、対象を確認してから実行する
+- `message_reader_create` は `opt_in_confirmed: true` が必須。オプトイン取得済みの連絡先だけを登録する
 - `message_reader_list_all` の条件キーは横断取得用に制限されます。シナリオ固有の読者項目で絞る場合は `message_reader_list` を使うこと
 - 読者項目で絞る前に `message_placeholder_list` の `is_filterable=true` を確認すること
 - `base_datetime` は配信条件専用。読者一覧の `conditions` では使わず、日付で絞る場合は `base_date` を使うこと
