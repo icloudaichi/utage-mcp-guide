@@ -3,7 +3,7 @@
   "baseline": "7f05b0c0a4686d6b507427b0095eba29bab3a611",
   "installed_prompt_sha256": "70d64e0a38189dc8a9e36c2d49cb9a4e4578cf6fa05abbae5fac6a2c5aa896fb",
   "installed_skill_sha256": "4310eba4e3e914f5bf816e50fb541e48a82dbe07a8fe1085b70629b3f8b9217e",
-  "method": "three independent agents; initial then cross critique; revision pending",
+  "method": "three independent agents; initial then cross critique; first revision; additional cross critique; final fixed-commit revision",
   "personal_goal_files_modified": false,
   "business_calls_by_reviewers": 0,
   "reports": [
@@ -15,10 +15,24 @@
       "redaction": "local absolute paths only; findings unchanged"
     },
     {
+      "path": "docs/evidence/magi/magi-balthasar-final.md",
+      "written_at_utc": "2026-10-03T07:40:17.380626+00:00",
+      "source_report_sha256": "c744bc84536b91112c6f29c9083d17337da17cec820d96972c617b1c4f3c0af2",
+      "published_report_sha256": "c744bc84536b91112c6f29c9083d17337da17cec820d96972c617b1c4f3c0af2",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
       "path": "docs/evidence/magi/magi-balthasar-initial.md",
       "written_at_utc": "2026-10-03T07:20:23.946709+00:00",
       "source_report_sha256": "727d004ac2ae46ca8f8decee1964ebbcf83e6199e670a88d0b6b216da488d485",
       "published_report_sha256": "5d29b6682955bd62e5e81f9671e54cee4e89ea0ccc2befbcc053e58ff98e308c",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-balthasar-revision.md",
+      "written_at_utc": "2026-10-03T07:33:07.278133+00:00",
+      "source_report_sha256": "7b0cb5678a51c025764b4e1d38dff65401ad832c754eaa8ddd177c5c79bde414",
+      "published_report_sha256": "7b0cb5678a51c025764b4e1d38dff65401ad832c754eaa8ddd177c5c79bde414",
       "redaction": "local absolute paths only; findings unchanged"
     },
     {
@@ -29,10 +43,31 @@
       "redaction": "local absolute paths only; findings unchanged"
     },
     {
+      "path": "docs/evidence/magi/magi-caspar-final.md",
+      "written_at_utc": "2026-10-03T07:41:08.133643+00:00",
+      "source_report_sha256": "a48a685bb9416a7d5353b836a1059aa15d055fc1ed719684e23a671ed2b0a4fe",
+      "published_report_sha256": "6c12037f98746c30f86829dbc706c6d25eda2c70e03f77fb0e552f2bae77b9b4",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
       "path": "docs/evidence/magi/magi-caspar-initial.md",
       "written_at_utc": "2026-10-03T07:19:51.077210+00:00",
       "source_report_sha256": "c19c56c01403767b80ebd8e8e9c72fea745e69ee1847498e265024afcb18013f",
       "published_report_sha256": "ec17433ba2510e0aee257f3f08ae7def385e2ad7463426a12be962cb38b10555",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-caspar-revision-cross.md",
+      "written_at_utc": "2026-10-03T07:36:20.564247+00:00",
+      "source_report_sha256": "87b8eba527e4f38b558228337ef2a291e3f7192ba8abe9d85dbbf905cd37a9c1",
+      "published_report_sha256": "87b8eba527e4f38b558228337ef2a291e3f7192ba8abe9d85dbbf905cd37a9c1",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-caspar-revision.md",
+      "written_at_utc": "2026-10-03T07:32:56.629614+00:00",
+      "source_report_sha256": "e513ec045e98543110973ec0776a5969df880756249c15208016575a172d094a",
+      "published_report_sha256": "e513ec045e98543110973ec0776a5969df880756249c15208016575a172d094a",
       "redaction": "local absolute paths only; findings unchanged"
     },
     {
@@ -43,11 +78,42 @@
       "redaction": "local absolute paths only; findings unchanged"
     },
     {
+      "path": "docs/evidence/magi/magi-melchior-final.md",
+      "written_at_utc": "2026-10-03T07:40:29.882591+00:00",
+      "source_report_sha256": "d78330e27031fb8b103698b1468ec8d4f31e517cfe21fce3eba58082d3b7427e",
+      "published_report_sha256": "d78330e27031fb8b103698b1468ec8d4f31e517cfe21fce3eba58082d3b7427e",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
       "path": "docs/evidence/magi/magi-melchior-initial.md",
       "written_at_utc": "2026-10-03T07:20:13.502478+00:00",
       "source_report_sha256": "51c24c601ccb207e02d1d2373d056f0a8048cfc8e3a41820184aa196c29f363d",
       "published_report_sha256": "07aa962163696076c9ca67fd0a2504de09e49d7097b352df1bad8335df002858",
       "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-melchior-revision-cross.md",
+      "written_at_utc": "2026-10-03T07:35:51.322586+00:00",
+      "source_report_sha256": "4ebed2795af566ac51ec5efd95402099e8283562671165d2d7fb8649843c4257",
+      "published_report_sha256": "4ebed2795af566ac51ec5efd95402099e8283562671165d2d7fb8649843c4257",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-melchior-revision.md",
+      "written_at_utc": "2026-10-03T07:31:26.145202+00:00",
+      "source_report_sha256": "2e431ef95b9bee462d5db1ed7a39e70e70869ce84efb97acdfc586d78ca7a129",
+      "published_report_sha256": "2e431ef95b9bee462d5db1ed7a39e70e70869ce84efb97acdfc586d78ca7a129",
+      "redaction": "local absolute paths only; findings unchanged"
     }
-  ]
+  ],
+  "first_revision_commit": "497bacc46b7ca412e9fc0959ff37462720e772d6",
+  "final_implementation_commit": "25aaf49eaf83fb8f9e2cf2c063a9a21e0a5027e1",
+  "final_verdicts": {
+    "CASPAR": "approved",
+    "BALTHASAR": "approved",
+    "MELCHIOR": "approved"
+  },
+  "final_review_test_count": 73,
+  "review_scope": "guide, anonymous evidence, offline contracts and mocked backup; not all provider schemas or live write behavior",
+  "timestamp_note": "written_at_utc is source report artifact mtime, not a signed execution attestation"
 }

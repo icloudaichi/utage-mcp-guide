@@ -1,0 +1,20 @@
+{
+  "checked_at_utc": "2026-10-03T07:39:29.985121+00:00",
+  "implementation_commit": "25aaf49eaf83fb8f9e2cf2c063a9a21e0a5027e1",
+  "command": "python3 -m unittest discover -s tests -q",
+  "working_directory": "repository root",
+  "runtime": {
+    "python": "3.9.6",
+    "implementation": "CPython",
+    "os": "Darwin"
+  },
+  "test_count": 73,
+  "reported_duration_seconds": 0.072,
+  "exit_code": 0,
+  "result": "passed",
+  "git_diff_check_exit_code": 0,
+  "live_service_calls_by_test_suite": 0,
+  "mock_transport_calls_for_133_catalog_write_tools": 0,
+  "dependencies_installed": 0,
+  "notes": "Offline/mock validation only. Does not establish full provider JSON Schema, live backup, all-pages completeness or live write behavior. MAGI evidence is stored separately."
+}
