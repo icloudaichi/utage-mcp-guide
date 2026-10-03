@@ -32,7 +32,7 @@ brew install node
 
 ## Step 1: MCPサーバーを設定する
 
-VS Codeフォーク系IDEはOAuthブラウザフローを直接サポートしないため、`mcp-remote` をプロキシとして使用します。
+[公式セットアップ](https://docs.utage-system.com/mcp/setup)ではCursorはURLとAPIキーの直接接続、OAuth対応クライアントはURL登録を案内しています。以下は `mcp-remote` 経由で既存OAuth接続を使う代替例です。全IDEが同じ認証方式だと判断せず、現在のクライアント手順を確認してください。この方式を選ぶ場合は `npx` がパッケージを取得することがあります。
 
 使用するIDEに合わせて、以下の設定ファイルに追記してください。
 
@@ -68,7 +68,7 @@ IDEを再起動後、AIに以下のように指示してみてください：
 
 > 「UTAGE MCPの `find_tools` を呼んで、カテゴリ別のツール一覧を見せて」
 
-2026-08-22時点の実機確認では、`find_tools` 自体を除き、funnel 23件、message 71件、media 12件、member 24件、event 18件、reference 8件、integration 1件の合計157ツールが返りました。`message_types_line` と `message_condition_types` は名前が `message_*` でも `reference` に分類されます。message系・member系・event系・funnel統計系の多くはプレビュー扱いです。
+2026-10-03のLBS接続では253件のメタデータを確認しました（`find_tools` 自体は除外）。[全一覧](../docs/tool-catalog.md)にカテゴリとpreview状態を記録しています。名前・説明の発見と、クライアントの入力スキーマ確認、実read成功を区別してください。
 
 `find_tools` の実質的な絞り込みは `category` だけです。`query` はやりたいことのメモとして受け付けられますが、現在は結果の絞り込みには使われません。
 
@@ -78,7 +78,7 @@ IDEを再起動後、AIに以下のように指示してみてください：
 
 ファネル一覧が返ればセットアップ完了です。
 
-現行カタログに以下が見えない場合は、IDE再起動、MCP URL確認、必要に応じて認証キャッシュ削除を行ってから `find_tools` を再実行してください:
+必要なツールが見えない場合は接続URL・対象アカウントとクライアントのツール定義を確認してください。認証キャッシュ削除・再認証を自動実行せず、取得できない範囲を記録します。`/mcp/<識別子>` は接続ラベルであり、対象は認証時のログインにより決まります。
 
 - preview `message_*` ツール
 - preview `member_*` ツール
@@ -96,11 +96,7 @@ IDEを再起動後、AIに以下のように指示してみてください：
 
 ### トークン失効時の再認証
 
-認証エラーが発生した場合は以下を実行してからIDEを再起動してください：
-
-```bash
-rm -rf ~/.mcp-auth/
-```
+認証エラーはblocked authとして記録します。ユーザーが再認証を依頼した場合に限り、対象接続のクライアント手順で復旧します。全サーバー共通のキャッシュを削除する方法は、他の接続へ影響するため使いません。
 
 ### TLS証明書エラー（UNABLE_TO_GET_ISSUER_CERT_LOCALLY）
 
@@ -113,33 +109,7 @@ cause: Error: unable to get local issuer certificate
 
 **原因**: Node.js がシステムのCA証明書ストアを参照できない環境（企業プロキシ、VPN等）で発生します。
 
-**暫定対処（開発環境限定）**:
-
-MCP設定に環境変数を追加してTLS検証をスキップします：
-
-```json
-{
-  "mcpServers": {
-    "utage-api": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://api.utage-system.com/mcp"],
-      "env": {
-        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
-      }
-    }
-  }
-}
-```
-
-> ⚠️ `NODE_TLS_REJECT_UNAUTHORIZED=0` はTLS証明書の検証を無効化します。**本番環境やセキュリティが重要な環境では使用しないでください**。  
-> この問題は mcp-remote 側の既知の課題として報告中です。
-
-**恒久対処**: Node.js にシステムのCA証明書を認識させます：
-
-```bash
-# macOSの場合
-export NODE_EXTRA_CA_CERTS="$(security find-certificate -a -p /System/Library/Keychains/SystemRootCertificates.keychain)"
-```
+クライアント・Node.jsの証明書設定と信頼するCAを確認し、TLS検証を維持してください。追加CAが必要な環境では `NODE_EXTRA_CA_CERTS` に信頼済みPEMファイルのパスを設定します。PEM本文を環境変数へ入れる方式やTLS検証無効化を使わず、復旧できない場合は接続未検証として報告します。
 
 ---
 

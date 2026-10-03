@@ -500,6 +500,10 @@ total_messages: 45
 
 ## ⚠️ 注意事項
 
+2026-10-03 更新: `backup_funnels.py` の既定 URL を公式 `https://api.utage-system.com/v1` に修正しました。ファネル一覧はページごとの期待件数・総数・ID 重複を照合し、取得失敗や不整合は `_backup_manifest.json` に `incomplete` と記録して終了コード 1 を返します。エラー本文や認証情報はログへ出しません。
+[ステップ一覧](https://docs.utage-system.com/api-reference/funnel/step-list)・[ページ一覧](https://docs.utage-system.com/api-reference/funnel/page-list) の公開仕様は `data` のみの非ページング形式です。未知の `meta`・`links` 等や重複 ID は仕様変化として拒否し、不完全な取得を完了扱いしません。
+今回のバックアップ処理の検証は通信をモックした標準 Python の回帰テストのみです。実サービスのバックアップは実行していません。
+
 - **API制限**: `funnel_page_get` と `message_get` はそれぞれ1件ずつ呼ぶ必要がある。大量データの場合は時間がかかる
 - **ファイル名のサニタイズ**: タイトルに `/` `:` `?` `*` `"` `<` `>` `|` が含まれる場合は `_` に置換
 - **アーカイブ済みページ**: `is_archived: 1` のページもバックアップ対象に含める

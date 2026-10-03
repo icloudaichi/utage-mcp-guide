@@ -15,7 +15,7 @@ UTAGEのMCPサーバーを **VS Codeフォーク系IDE（Cursor・Antigravity・
 
 - **VS Codeフォーク系IDE向けMCPセットアップ**: `mcp-remote` 経由でOAuth認証を実現
 - **実機検証済みの落とし穴20件以上**を記録（公式ドキュメントの誤記・サイレント失敗を含む）
-- **現行MCPカタログの差分メモ**: `find_tools` で確認できる157ツールと、プレビュー機能を補足
+- **現行MCPカタログの差分メモ**: 2026-10-03のLBS接続で確認した253ツール（メタデータ）と、実read/未検証を区別した証跡
 - MDファイルからステップメールを一括投入するワークフローを収録
 - エラー発見時は GitHub Discussions に自動報告
 
@@ -23,7 +23,7 @@ UTAGEのMCPサーバーを **VS Codeフォーク系IDE（Cursor・Antigravity・
 
 **前提**: [Node.js](https://nodejs.org/) v18 以上が必要です（`node -v` で確認）
 
-VS Codeフォーク系IDEはOAuthブラウザフローを直接サポートしないため、`mcp-remote` をプロキシとして使います。
+[公式セットアップ](https://docs.utage-system.com/mcp/setup)はCursorにURLとAPIキーの直接接続を案内しています。以下は既存OAuth接続を利用する `mcp-remote` 経由の代替例です。クライアントごとの公式手順を先に確認してください。
 
 以下の設定ファイルに追記してください：
 
@@ -72,11 +72,16 @@ utage-mcp-guide/
 ├── media/            # 通常メディア・動画・音声の参照/アップロード
 ├── member/           # 会員サイト・コース・レッスン
 ├── event/            # イベント・日程・予約者
+├── payment/          # 商品・価格ラインナップ設定
+├── docs/             # 全253ツール・検証行列・匿名receipt
+├── tests/            # 標準Pythonのoffline契約テスト
 ├── report/           # GitHub Discussionsへのフィードバック投稿
 └── setup/            # 初回セットアップ
 ```
 
 ## フィードバック
+
+エンドポイントの確認範囲は [現行ツール一覧](docs/tool-catalog.md) と [テスト行列](docs/endpoint-testing.md) を参照してください。`python3 -m unittest discover -s tests -v` でoffline契約テストを実行できます。実サービスの変更系呼出しは0件です。入力スキーマ未取得、blocked auth、非JSON応答を成功扱いせず記録しています。
 
 エラー・新発見・改善提案は [GitHub Discussions](https://github.com/icloudaichi/utage-mcp-guide/discussions) へ。  
 AIに「GitHubに報告して」と言えば `report_discussion.py` が自動投稿します。

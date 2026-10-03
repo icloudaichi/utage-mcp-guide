@@ -1,0 +1,193 @@
+{
+  "observed_at_date": "2026-10-03",
+  "all_business_mutations": 0,
+  "new_credentials": 0,
+  "receipts": [
+    {
+      "case": "account-read-evidence-1",
+      "origin": "shared_read_observation",
+      "profile_alias": "wasa",
+      "tool": "message_account_list",
+      "observed_at_utc": "2026-10-03T06:16:16.786562+00:00",
+      "status": "read_verified",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted",
+      "item_field_names": [
+        "created_at",
+        "id",
+        "name",
+        "type"
+      ],
+      "row_count": 25
+    },
+    {
+      "case": "account-read-evidence-2",
+      "origin": "shared_read_observation",
+      "profile_alias": "lbs",
+      "tool": "message_account_list",
+      "observed_at_utc": "2026-10-03T06:16:16.787358+00:00",
+      "status": "read_verified",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted",
+      "item_field_names": [
+        "created_at",
+        "id",
+        "name",
+        "type"
+      ],
+      "row_count": 7
+    },
+    {
+      "case": "daichi-account-read-status-0",
+      "origin": "shared_read_observation",
+      "profile_alias": "hirahara",
+      "tool": "message_account_list",
+      "observed_at_utc": "2026-10-03T06:21:23.858470+00:00",
+      "status": "unavailable_auth",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted",
+      "auth_error_marker": true
+    },
+    {
+      "case": "lbs-survey-count-evidence-0",
+      "origin": "shared_read_observation",
+      "profile_alias": "lbs",
+      "tool": "message_reader_list",
+      "observed_at_utc": "2026-10-03T06:24:19.473495+00:00",
+      "status": "read_verified",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted",
+      "item_field_names": [
+        "base_date",
+        "common_fields",
+        "common_reader_id",
+        "created_at",
+        "id",
+        "scenario_fields",
+        "scenario_id"
+      ],
+      "row_count": 1
+    },
+    {
+      "case": "payment-read-product-list",
+      "origin": "shared_read_observation",
+      "profile_alias": "lbs",
+      "tool": "payment_product_list",
+      "observed_at_utc": "2026-10-03T06:57:15.783515+00:00",
+      "status": "read_verified",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted",
+      "row_count": 21,
+      "fixture": "tests/fixtures/payment-read-product-list-shape.json"
+    },
+    {
+      "case": "payment-read-regular-initial-plans",
+      "origin": "shared_read_observation",
+      "profile_alias": "lbs",
+      "tool": "payment_product_detail_list",
+      "observed_at_utc": "2026-10-03T06:58:37.832294+00:00",
+      "status": "read_verified",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted",
+      "row_count": 3,
+      "fixture": "tests/fixtures/payment-read-regular-initial-plans-shape.json"
+    },
+    {
+      "case": "payment-read-regular-second-period-plans",
+      "origin": "shared_read_observation",
+      "profile_alias": "lbs",
+      "tool": "payment_product_detail_list",
+      "observed_at_utc": "2026-10-03T06:58:37.014378+00:00",
+      "status": "read_verified",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted",
+      "row_count": 1,
+      "fixture": "tests/fixtures/payment-read-regular-second-period-plans-shape.json"
+    },
+    {
+      "case": "payment-read-regular-second-period-plan-detail",
+      "origin": "shared_read_observation",
+      "profile_alias": "lbs",
+      "tool": "payment_product_detail_get",
+      "observed_at_utc": "2026-10-03T06:59:54.807472+00:00",
+      "status": "unverified",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted"
+    },
+    {
+      "case": "payment-read-regular-plan-detail-correct-schema",
+      "origin": "shared_read_observation",
+      "profile_alias": "lbs",
+      "tool": "payment_product_detail_get",
+      "observed_at_utc": "2026-10-03T07:03:04.516039+00:00",
+      "status": "read_verified",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted",
+      "row_count": null,
+      "fixture": "tests/fixtures/payment-read-regular-plan-detail-correct-schema-shape.json",
+      "input_argument_names": [
+        "product_id",
+        "detail_id"
+      ]
+    },
+    {
+      "case": "rest-reference",
+      "tool": "element_types_funnel",
+      "observed_at_utc": "2026-10-03T07:00:36.300163+00:00",
+      "read_only": true,
+      "status": "read_verified",
+      "http_method": "GET",
+      "authentication": "none",
+      "endpoint": "/v1/element-types/funnel",
+      "http_status": 200,
+      "fixture": "tests/fixtures/rest-reference-shape.json",
+      "origin": "direct_bounded_read_observation",
+      "completeness": "not_applicable_reference"
+    },
+    {
+      "case": "mcp-reference",
+      "tool": "element_types_funnel",
+      "observed_at_utc": "2026-10-03T07:00:36.400659+00:00",
+      "read_only": true,
+      "status": "read_verified",
+      "http_method": "POST",
+      "authentication": "existing_proxy_oauth",
+      "profile_alias": "lbs",
+      "http_status": 200,
+      "fixture": "tests/fixtures/mcp-reference-shape.json",
+      "origin": "direct_bounded_read_observation",
+      "completeness": "not_applicable_reference"
+    },
+    {
+      "case": "payment-detail-invalid-key",
+      "origin": "shared_read_observation",
+      "profile_alias": "lbs",
+      "tool": "payment_product_detail_get",
+      "observed_at_utc": null,
+      "observed_at_note": "attempt time not preserved in capability summary",
+      "status": "provider_invalid_params",
+      "error_code": -32602,
+      "argument_name": "product_detail_id",
+      "read_only": true,
+      "completeness": "not_asserted"
+    }
+  ]
+}

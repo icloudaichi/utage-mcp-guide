@@ -142,7 +142,7 @@ curl -s "https://api.utage-system.com/v1/funnels/FUNNEL_ID/steps" \
   -H "Authorization: Bearer $UTAGE_API_KEY"
 
 # ステップ並び替え（全ステップID必須）
-curl -s -X PUT "https://api.utage-system.com/v1/funnels/FUNNEL_ID/steps/reorder" \
+curl -s -X PATCH "https://api.utage-system.com/v1/funnels/FUNNEL_ID/steps/reorder" \
   -H "Authorization: Bearer $UTAGE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"step_ids":["STEP_ID_1","STEP_ID_2","STEP_ID_3"]}'
@@ -155,7 +155,7 @@ curl -s -X POST \
   --data-binary @page.json
 
 # ページ更新（⚠️ elementsを変更する場合はGETして全要素を含めること）
-curl -s -X PUT \
+curl -s -X PATCH \
   "https://api.utage-system.com/v1/funnels/FUNNEL_ID/steps/STEP_ID/pages/PAGE_ID" \
   -H "Authorization: Bearer $UTAGE_API_KEY" \
   -H "Content-Type: application/json" \

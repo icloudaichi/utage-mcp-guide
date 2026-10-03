@@ -1,7 +1,7 @@
 # UTAGE AI Skill - event
 
 イベント、日程、カレンダー、担当者、申込者、申込フォームを扱います。
-`event_*` は preview 扱いです。作業前に `find_tools(category="event")` で最新スキーマを確認してください。
+`event_*` は preview 扱いです。`find_tools(category="event")` で露出を確認し、入力スキーマはクライアントのツール定義で別途確認してください。
 
 ## MCPツール
 
@@ -54,6 +54,8 @@
 5. 申込者情報は目的と権限を確認してから `event_applicant_list/get` を呼ぶ
 
 ## 検証記録
+
+2026-10-03のLBSカタログでは29件を確認しました。event group CRUD、担当者CRUDと連携リンク発行・削除が追加されています。[全一覧](../docs/tool-catalog.md)を参照してください。連携リンクの発行はwriteです。今回eventカテゴリの実read/writeは未実行です。
 
 2026-08-22 カタログ確認:
 - MCP `find_tools(category="event")` で event 系18ツールを確認

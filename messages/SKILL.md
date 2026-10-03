@@ -229,7 +229,7 @@ curl -s "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios/SCENARIO_
   -H "Authorization: Bearer $UTAGE_API_KEY"
 
 # メッセージ更新（部分更新。conditions/url_actions/line.messagesは指定時に全件置換）
-curl -s -X PUT "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios/SCENARIO_ID/messages/MESSAGE_ID" \
+curl -s -X PATCH "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/scenarios/SCENARIO_ID/messages/MESSAGE_ID" \
   -H "Authorization: Bearer $UTAGE_API_KEY" \
   -H "Content-Type: application/json" \
   --data-binary @payload.json

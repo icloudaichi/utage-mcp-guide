@@ -28,6 +28,8 @@ SKILL.mdの内容を修正・追加したい場合:
 2. 変更をコミット
 3. Pull Requestを送る
 
+API/MCPの更新では、参照元と確認日、metadata発見・schema確認・実read・mockを分けて記録してください。`python3 -m unittest discover -s tests -v` でoffline検証を実行できます。疎通確認でcreate/update/delete/send・実決済・権限変更を実行せず、未知のendpointを推測しません。公開証跡は値を除去した型構造と固定字段receiptに限定し、認証情報・会員PII・決済ID・本文をアップロードしません。
+
 ## ライセンス
 
 コントリビューションはMIT（スクリプト）/ CC BY 4.0（ドキュメント）に同意したものとみなします。

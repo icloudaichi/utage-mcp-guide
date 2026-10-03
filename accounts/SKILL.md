@@ -2,7 +2,7 @@
 
 配信アカウント・ラベル・読者データを管理します。
 
-> これらは preview 扱いの `message_*` ツール群に含まれます。作業前に `find_tools(category="message")` で最新スキーマを確認してください。
+> これらは preview 扱いの `message_*` ツール群に含まれます。`find_tools(category="message")` で露出を確認し、入力スキーマはクライアントのツール定義で別途確認してください。
 
 ## MCPツール
 
@@ -47,12 +47,14 @@
 - `message_reader_list_all` の条件キーは横断取得用に制限されます。シナリオ固有の読者項目で絞る場合は `message_reader_list` を使うこと
 - 読者項目で絞る前に `message_placeholder_list` の `is_filterable=true` を確認すること
 - `base_datetime` は配信条件専用。読者一覧の `conditions` では使わず、日付で絞る場合は `base_date` を使うこと
-- REST/MCPの読者レスポンスでは `mail` / `name` が `null` になる場合があります。メールアドレス等のPII確認は管理画面CSVダウンロードが必要
+- REST/MCPの読者レスポンスでは `mail` / `name` が `null` になる場合があります。nullを未登録と判断せず、必要な項目をAPI/MCPで確認できない場合のみ、権限を確認して管理画面CSVを検討します
 - REST `conditions` は `[{"rules":[...]}]` の配列形式。`{"rules":[...]}` は422
 
 ---
 
 ## 補足: REST API（curl）
+
+`created_at` は読者作成日時です。フォームの再送信日時 `submitted_at` と同一視しません。offsetのない値はtimezone未確認として扱います。今回の `message_reader_activity_list` は未露出で、取得成功にはなっていません。認証結果とpaginationの完了条件は [検証行列](../docs/endpoint-testing.md) を参照してください。
 
 ```bash
 # アカウント一覧
@@ -74,7 +76,7 @@ curl -s "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/labels/LABEL_ID" \
   -H "Authorization: Bearer $UTAGE_API_KEY"
 
 # ラベル更新
-curl -s -X PUT "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/labels/LABEL_ID" \
+curl -s -X PATCH "https://api.utage-system.com/v1/accounts/ACCOUNT_ID/labels/LABEL_ID" \
   -H "Authorization: Bearer $UTAGE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "更新後ラベル名"}'
