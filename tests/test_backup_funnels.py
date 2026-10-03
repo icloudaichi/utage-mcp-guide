@@ -200,7 +200,7 @@ class BackupCompletenessTests(unittest.TestCase):
                                           "offline-placeholder", backup.API_BASE_DEFAULT, "synthetic-time")
             self.assertEqual(result["errors"], 1)
             self.assertEqual(result["pages"], 0)
-            meta = Path(directory) / "funnels" / "Sample" / "Sample step" / "_meta.md"
+            meta = Path(directory) / "funnels" / backup.resource_basename("Sample", "funnel-1") / backup.resource_basename("Sample step", "step-1") / "_meta.md"
             self.assertIn("status: incomplete", meta.read_text())
 
     def test_step_list_unknown_pagination_or_duplicates_are_incomplete(self):
@@ -235,7 +235,7 @@ class BackupCompletenessTests(unittest.TestCase):
                     patch.object(backup.time, "sleep"), patch("sys.stdout", new=io.StringIO()):
                 result = backup.backup_funnel({"id": "funnel-1", "name": "Sample"}, Path(directory),
                                               "offline-placeholder", backup.API_BASE_DEFAULT, "synthetic-time")
-                meta = Path(directory) / "funnels" / "Sample" / "Sample step" / "_meta.md"
+                meta = Path(directory) / "funnels" / backup.resource_basename("Sample", "funnel-1") / backup.resource_basename("Sample step", "step-1") / "_meta.md"
                 self.assertIn("status: incomplete", meta.read_text())
             self.assertEqual(result["errors"], 1)
             page_backup.assert_not_called()
@@ -276,6 +276,129 @@ class BackupErrorPrivacyTests(unittest.TestCase):
                 self.assertIsNone(backup.api_get("/funnels", "offline-placeholder", backup.API_BASE_DEFAULT))
                 self.assertIn(expected, output.getvalue())
                 self.assertNotIn("private-credential", output.getvalue())
+
+
+class BackupPageDetailTests(unittest.TestCase):
+    def test_empty_detail_fails_main_without_synthesizing_body(self):
+        responses = [listing_page(1, 1, [{"id": "funnel-1", "name": "Sample"}]),
+                     {"data": [{"id": "step-1", "name": "Sample step"}]},
+                     {"data": [{"id": "page-1", "title": "Sample page", "content_type": "elements"}]},
+                     {"data": {}}]
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(backup, "load_config", return_value=("offline-placeholder", backup.API_BASE_DEFAULT)), \
+                patch.object(backup, "api_get", side_effect=responses), \
+                patch.object(backup.time, "sleep"), \
+                patch("sys.argv", ["backup_funnels.py", "--output", directory]), \
+                patch("sys.stdout", new=io.StringIO()) as output:
+            self.assertEqual(backup.main(), 1)
+            manifest = json.loads((Path(directory) / "_backup_manifest.json").read_text())
+            self.assertEqual(manifest["status"], "incomplete")
+            self.assertEqual(manifest["errors"], 1)
+            step_dir = Path(directory) / "funnels" / backup.resource_basename("Sample", "funnel-1") / backup.resource_basename("Sample step", "step-1")
+            page = step_dir / f"{backup.resource_basename('Sample page', 'page-1')}.md"
+            self.assertIn("status: error", page.read_text())
+            self.assertNotIn("## 要素データ", page.read_text())
+            self.assertIn("status: incomplete", (step_dir / "_meta.md").read_text())
+            self.assertIn("errors: 1", (step_dir / "_meta.md").read_text())
+            self.assertNotIn("✅ バックアップ完了", output.getvalue())
+
+    def test_missing_mismatched_or_incompatible_detail_is_rejected(self):
+        invalid = (
+            {},
+            {"content_type": "elements", "elements": []},
+            {"id": "other-page", "content_type": "elements", "elements": []},
+            {"id": 1, "content_type": "elements", "elements": []},
+            {"id": "page-1", "elements": []},
+            {"id": "page-1", "content_type": "unknown", "elements": []},
+            {"id": "page-1", "content_type": [], "elements": []},
+            {"id": "page-1", "content_type": "elements"},
+            {"id": "page-1", "content_type": "elements", "html_source": ""},
+            {"id": "page-1", "content_type": "elements", "elements": None},
+            {"id": "page-1", "content_type": "elements", "elements": "[]"},
+            {"id": "page-1", "content_type": "elements", "elements": [None]},
+            {"id": "page-1", "content_type": "raw_html", "elements": []},
+            {"id": "page-1", "content_type": "raw_html", "html_source": None},
+            {"id": "page-1", "content_type": "raw_html", "html_source": []},
+        )
+        for data in invalid:
+            with self.subTest(data=data), tempfile.TemporaryDirectory() as directory, \
+                    patch.object(backup, "api_get", return_value={"data": data}), \
+                    patch.object(backup.time, "sleep"), patch("sys.stdout", new=io.StringIO()):
+                self.assertFalse(backup.backup_page("funnel-1", "step-1", {"id": "page-1", "title": "Sample"},
+                                                   Path(directory), "offline-placeholder", backup.API_BASE_DEFAULT, "synthetic-time"))
+                self.assertIn("status: error", (Path(directory) / f"{backup.resource_basename('Sample', 'page-1')}.md").read_text())
+
+    def test_detail_type_must_match_list_metadata_when_present(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(backup, "api_get", return_value={"data": {"id": "page-1", "content_type": "elements", "elements": []}}), \
+                patch.object(backup.time, "sleep"), patch("sys.stdout", new=io.StringIO()):
+            self.assertFalse(backup.backup_page("funnel-1", "step-1", {"id": "page-1", "title": "Sample", "content_type": "raw_html"},
+                                               Path(directory), "offline-placeholder", backup.API_BASE_DEFAULT, "synthetic-time"))
+
+    def test_explicit_empty_bodies_are_valid(self):
+        valid = ({"id": "page-1", "content_type": "elements", "elements": []},
+                 {"id": "page-1", "content_type": "raw_html", "html_source": ""},
+                 {"id": "page-1", "content_type": "elements", "elements": [], "html_source": ""})
+        for data in valid:
+            with self.subTest(data=data), tempfile.TemporaryDirectory() as directory, \
+                    patch.object(backup, "api_get", return_value={"data": data}), \
+                    patch.object(backup.time, "sleep"):
+                self.assertTrue(backup.backup_page("funnel-1", "step-1", {"id": "page-1", "title": "Sample", "content_type": data["content_type"]},
+                                                  Path(directory), "offline-placeholder", backup.API_BASE_DEFAULT, "synthetic-time"))
+                self.assertNotIn("status: error", (Path(directory) / f"{backup.resource_basename('Sample', 'page-1')}.md").read_text())
+
+
+class BackupResourceCollisionTests(unittest.TestCase):
+    def test_long_multibyte_label_can_be_saved_with_digest(self):
+        filename = backup.resource_basename("講座" * 80, "sample-page") + ".md"
+        self.assertLessEqual(len(filename.encode("utf-8")), 255)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / filename
+            backup.write_md(path, "synthetic content")
+            self.assertEqual(path.read_text(), "synthetic content")
+
+    def test_same_labels_and_lossy_id_pairs_produce_distinct_backups(self):
+        # Each pair would collide if its ID were only sanitized (slash -> _ and
+        # colon -> _). Use two same-name funnels, steps, and pages in every parent.
+        funnel_ids = ("funnel/a", "funnel:a")
+        step_ids = ("step/a", "step:a")
+        page_ids = ("page/a", "page:a")
+        responses = {"/funnels": listing_page(1, 2, [{"id": id_, "name": "Same"} for id_ in funnel_ids], per_page=100)}
+        for funnel_id in funnel_ids:
+            responses[f"/funnels/{funnel_id}/steps"] = {"data": [{"id": id_, "name": "Same"} for id_ in step_ids]}
+            for step_id in step_ids:
+                base = f"/funnels/{funnel_id}/steps/{step_id}/pages"
+                responses[base] = {"data": [{"id": id_, "title": "Same", "content_type": "elements"} for id_ in page_ids]}
+                for page_id in page_ids:
+                    responses[f"{base}/{page_id}"] = {"data": {"id": page_id, "title": "Same", "content_type": "elements", "elements": []}}
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(backup, "load_config", return_value=("offline-placeholder", backup.API_BASE_DEFAULT)), \
+                patch.object(backup, "api_get", side_effect=lambda endpoint, *_: responses[endpoint]), \
+                patch.object(backup.time, "sleep"), \
+                patch("sys.argv", ["backup_funnels.py", "--output", directory]), \
+                patch("sys.stdout", new=io.StringIO()):
+            self.assertEqual(backup.main(), 0)
+            root = Path(directory)
+            manifest = json.loads((root / "_backup_manifest.json").read_text())
+            self.assertEqual(manifest["status"], "complete")
+            self.assertEqual(manifest["errors"], 0)
+            funnel_dirs = [path for path in (root / "funnels").iterdir() if path.is_dir()]
+            self.assertEqual(len(funnel_dirs), 2)
+            self.assertEqual({path.joinpath("_meta.md").read_text().split('id: "')[1].split('"')[0] for path in funnel_dirs}, set(funnel_ids))
+            page_files = []
+            for funnel_dir in funnel_dirs:
+                step_dirs = [path for path in funnel_dir.iterdir() if path.is_dir()]
+                self.assertEqual(len(step_dirs), 2)
+                self.assertEqual({path.joinpath("_meta.md").read_text().split('id: "')[1].split('"')[0] for path in step_dirs}, set(step_ids))
+                for step_dir in step_dirs:
+                    self.assertIn("status: complete", (step_dir / "_meta.md").read_text())
+                    files = [path for path in step_dir.glob("*.md") if path.name != "_meta.md"]
+                    self.assertEqual(len(files), 2)
+                    self.assertEqual({path.read_text().split('id: "')[1].split('"')[0] for path in files}, set(page_ids))
+                    page_files.extend(files)
+            self.assertEqual(len(set(page_files)), 8)
+            self.assertFalse(any(path.parent == root for path in page_files))
 
 
 if __name__ == "__main__":

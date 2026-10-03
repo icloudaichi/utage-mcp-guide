@@ -1,7 +1,7 @@
 {
-  "checked_at_utc": "2026-10-03T07:14:43.385275+00:00",
+  "checked_at_utc": "2026-10-03T07:27:17.353400+00:00",
   "method": "private_scalar_comparison_and_credential_literal_scan",
-  "scanned_file_count": 36,
+  "scanned_file_count": 43,
   "private_comparison_value_count": 159,
   "findings": [],
   "published_raw_responses": 0,

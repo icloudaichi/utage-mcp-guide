@@ -128,7 +128,8 @@
       "http_status": null,
       "http_status_note": "not_preserved_in_source",
       "read_only": true,
-      "completeness": "not_asserted"
+      "completeness": "not_asserted",
+      "failure_marker": "provider_result_unverified"
     },
     {
       "case": "payment-read-regular-plan-detail-correct-schema",
@@ -147,6 +148,19 @@
         "product_id",
         "detail_id"
       ]
+    },
+    {
+      "case": "payment-read-regular-plan-detail-diagnostic",
+      "origin": "shared_read_observation",
+      "profile_alias": "lbs",
+      "tool": "payment_product_detail_get",
+      "observed_at_utc": "2026-10-03T07:02:26.425579+00:00",
+      "status": "unverified",
+      "http_status": null,
+      "http_status_note": "not_preserved_in_source",
+      "read_only": true,
+      "completeness": "not_asserted",
+      "failure_marker": "provider_non_json_text"
     },
     {
       "case": "rest-reference",

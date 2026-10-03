@@ -1,0 +1,53 @@
+{
+  "initial_review_commit": "5a65fe111afb187e28459ec78931d9a9605c5098",
+  "baseline": "7f05b0c0a4686d6b507427b0095eba29bab3a611",
+  "installed_prompt_sha256": "70d64e0a38189dc8a9e36c2d49cb9a4e4578cf6fa05abbae5fac6a2c5aa896fb",
+  "installed_skill_sha256": "4310eba4e3e914f5bf816e50fb541e48a82dbe07a8fe1085b70629b3f8b9217e",
+  "method": "three independent agents; initial then cross critique; revision pending",
+  "personal_goal_files_modified": false,
+  "business_calls_by_reviewers": 0,
+  "reports": [
+    {
+      "path": "docs/evidence/magi/magi-balthasar-cross.md",
+      "written_at_utc": "2026-10-03T07:22:11.701592+00:00",
+      "source_report_sha256": "9e8d7801f326a6eba1df3123a37df9930d21449f47c908fa87b77bda2cedf928",
+      "published_report_sha256": "9e8d7801f326a6eba1df3123a37df9930d21449f47c908fa87b77bda2cedf928",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-balthasar-initial.md",
+      "written_at_utc": "2026-10-03T07:20:23.946709+00:00",
+      "source_report_sha256": "727d004ac2ae46ca8f8decee1964ebbcf83e6199e670a88d0b6b216da488d485",
+      "published_report_sha256": "5d29b6682955bd62e5e81f9671e54cee4e89ea0ccc2befbcc053e58ff98e308c",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-caspar-cross.md",
+      "written_at_utc": "2026-10-03T07:22:57.797857+00:00",
+      "source_report_sha256": "e57c91e4ab716035aa0015ffe5b3048c458924389c55ebb9ec70deb870d8c069",
+      "published_report_sha256": "e57c91e4ab716035aa0015ffe5b3048c458924389c55ebb9ec70deb870d8c069",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-caspar-initial.md",
+      "written_at_utc": "2026-10-03T07:19:51.077210+00:00",
+      "source_report_sha256": "c19c56c01403767b80ebd8e8e9c72fea745e69ee1847498e265024afcb18013f",
+      "published_report_sha256": "ec17433ba2510e0aee257f3f08ae7def385e2ad7463426a12be962cb38b10555",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-melchior-cross.md",
+      "written_at_utc": "2026-10-03T07:22:18.204887+00:00",
+      "source_report_sha256": "b16dbd14bfa921caf8cc9ce2e0fffb45ad0e1869fe2dc96a4db4887df03ae9ab",
+      "published_report_sha256": "b16dbd14bfa921caf8cc9ce2e0fffb45ad0e1869fe2dc96a4db4887df03ae9ab",
+      "redaction": "local absolute paths only; findings unchanged"
+    },
+    {
+      "path": "docs/evidence/magi/magi-melchior-initial.md",
+      "written_at_utc": "2026-10-03T07:20:13.502478+00:00",
+      "source_report_sha256": "51c24c601ccb207e02d1d2373d056f0a8048cfc8e3a41820184aa196c29f363d",
+      "published_report_sha256": "07aa962163696076c9ca67fd0a2504de09e49d7097b352df1bad8335df002858",
+      "redaction": "local absolute paths only; findings unchanged"
+    }
+  ]
+}

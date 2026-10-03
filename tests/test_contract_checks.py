@@ -2,6 +2,7 @@
 
 import json
 import unittest
+from dataclasses import replace
 from unittest.mock import Mock
 
 from scripts.contract_checks import (
@@ -89,6 +90,66 @@ class ResultTests(unittest.TestCase):
                 self.assertTrue(result.success)
                 self.assertEqual(result.payload, {"tools": []})
                 self.assertEqual(result.identity_binding, "transport")
+
+    def test_jsonrpc_mcp_content_at_every_wrapper_depth_is_checked(self):
+        cases = (
+            ("not JSON", "invalid_result"),
+            ('{"profile":"wasamagazine","data":[]}', "profile_mismatch"),
+            ('{"tool":"send","data":[]}', "tool_mismatch"),
+            ('{"http_status":500,"data":[]}', "http_error"),
+            ('{"status":"success"}', "invalid_result"),
+            ('{"success":"false","data":[{"id":"synthetic"}]}', "invalid_result"),
+        )
+        for text, marker in cases:
+            rpc = {"jsonrpc": "2.0", "id": 1, "result": {
+                "content": [{"type": "text", "text": text}]}}
+            for response in (rpc, {"result": rpc}, {"structuredContent": rpc},
+                             {"body": json.dumps(rpc)}):
+                with self.subTest(marker=marker, response=response):
+                    result = self.check(response)
+                    self.assertFalse(result.success)
+                    self.assertEqual(result.marker, marker)
+
+    def test_nested_mcp_valid_data_is_payload_not_content_array(self):
+        rpc = {"jsonrpc": "2.0", "id": 1, "result": {"isError": False, "content": [
+            {"type": "text", "text": '{"profile":"lbs","http_status":200,"data":[{"id":"synthetic"}]}'}]}}
+        result = self.check({"body": json.dumps(rpc)})
+        self.assertTrue(result.success)
+        self.assertEqual(result.payload, [{"id": "synthetic"}])
+        self.assertEqual(result.http_status, 200)
+        self.assertEqual(result.identity_binding, "echoed")
+
+    def test_nested_mcp_ambiguous_content_is_not_hidden_by_structured_content(self):
+        for content in ([], [{"type": "text", "text": "not JSON"}],
+                        [{"type": "text", "text": '{"success":true}'}],
+                        [{"type": "text", "text": '{"data":[]}'},
+                         {"type": "text", "text": '{"data":[]}'}]):
+            result = self.check({"jsonrpc": "2.0", "id": 1, "result": {
+                "structuredContent": {"data": []}, "content": content}})
+            self.assertFalse(result.success)
+            self.assertEqual(result.marker, "invalid_result")
+        self.assertFalse(self.check({"structuredContent": {"tools": []},
+                                     "result": {"status": "success"}}).success)
+
+    def test_success_wrapper_flag_requires_boolean(self):
+        for value in ("false", "true", 0, 1, None, [], {}):
+            for response in ({"success": value, "data": [{"id": "synthetic"}]},
+                             {"result": {"success": value, "data": []}}):
+                with self.subTest(response=response):
+                    self.assertFalse(self.check(response).success)
+                    self.assertEqual(self.check(response).marker, "invalid_result")
+
+    def test_business_record_status_success_do_not_mean_tool_failure(self):
+        records = [{"id": "synthetic", "status": "failed", "success": False},
+                   {"id": "synthetic-2", "status": "error", "success": "unknown"}]
+        for response in ({"success": True, "data": records},
+                         {"result": {"content": [{"type": "text", "text": json.dumps({"data": records})}]}}):
+            with self.subTest(response=response):
+                result = self.check(response)
+                self.assertTrue(result.success)
+                self.assertEqual(result.payload, records)
+        self.assertTrue(self.check({"data": {"id": "synthetic", "status": "failed",
+                                             "success": False}}).success)
 
     def test_proxy_single_text_block_dict_and_json_are_unwrapped(self):
         for block_text in ({"data": [{"id": "sample"}]},
@@ -224,7 +285,8 @@ class PublicEvidenceTests(unittest.TestCase):
     def test_receipt_is_fixed_whitelist_and_no_payload_values(self):
         plan = build_read_plan("message_reader_list", "hirahara", {"limit": 1})
         private = "member@example.invalid"
-        result = CheckedResult(True, None, 200, {private: {"email": private}})
+        result = unwrap_result({"http_status": 200, "data": {private: {"email": private}}},
+                               expected_tool=plan.tool, expected_profile=plan.wire_profile)
         receipt = make_receipt(plan, result,
                                item_field_names=["email", private, "token", "id"],
                                verification_kind="live_read")
@@ -264,6 +326,43 @@ class PublicEvidenceTests(unittest.TestCase):
             make_receipt(plan, CheckedResult(False, "secret@example.invalid", None))
         with self.assertRaisesRegex(ContractError, "inconsistent_result"):
             make_receipt(plan, CheckedResult(True, "tool_error", 200))
+
+    def test_caller_created_success_http_error_cannot_be_a_live_receipt(self):
+        plan = build_read_plan("find_tools", "lbs")
+        for code in (401, 403, 500, 300, 199):
+            with self.subTest(code=code), self.assertRaisesRegex(
+                ContractError, "inconsistent_http_success"):
+                make_receipt(plan, CheckedResult(True, None, code),
+                             verification_kind="live_read")
+        with self.assertRaisesRegex(ContractError, "result_binding_mismatch"):
+            make_receipt(plan, CheckedResult(True, None, 200, {"tools": []}),
+                         verification_kind="live_read")
+
+    def test_receipt_rechecks_payload_status_and_original_plan_binding(self):
+        plan = build_read_plan("find_tools", "lbs")
+        valid = unwrap_result({"http_status": 200, "data": {"tools": []}},
+                              expected_tool=plan.tool, expected_profile=plan.wire_profile)
+        self.assertEqual(make_receipt(plan, valid)["status"], "success")
+        for changes, marker in (
+            ({"http_status": 401}, "inconsistent_http_success"),
+            ({"checked_profile": "wasamagazine"}, "result_binding_mismatch"),
+            ({"checked_tool": "message_account_list"}, "result_binding_mismatch"),
+            ({"identity_binding": "guessed"}, "invalid_result_binding"),
+            ({"payload": None}, "invalid_result_evidence"),
+            ({"payload": {"status": "success"}}, "invalid_result_evidence"),
+            ({"payload": {"content": [{"type": "text", "text": "not JSON"}]}},
+             "invalid_result_evidence"),
+            ({"payload": {"profile": "wasamagazine", "data": []}}, "invalid_result_evidence"),
+        ):
+            with self.subTest(changes=changes), self.assertRaisesRegex(ContractError, marker):
+                make_receipt(plan, replace(valid, **changes), verification_kind="live_read")
+
+    def test_receipt_success_without_http_status_still_needs_checked_data(self):
+        plan = build_read_plan("find_tools", "lbs")
+        result = unwrap_result({"tools": []}, expected_tool=plan.tool,
+                               expected_profile=plan.wire_profile)
+        self.assertEqual(make_receipt(plan, result)["status"], "success")
+        self.assertIsNone(make_receipt(plan, result)["http_status"])
 
 
 class PaginationTests(unittest.TestCase):

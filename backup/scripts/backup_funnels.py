@@ -15,6 +15,7 @@ MCPツール経由だとコンテキスト上限に達するため、このス�
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -205,6 +206,15 @@ def sanitize(name: str) -> str:
     return re.sub(r'[/:*?"<>|\\]', '_', name)[:100].strip()
 
 
+def resource_basename(name: str, resource_id: str) -> str:
+    """Keep a readable label and a stable ID digest, without lossy ID escaping."""
+    label = sanitize(name) if isinstance(name, str) else ""
+    # Leave room for the digest and extension within common 255-byte limits.
+    label = label.encode("utf-8")[:180].decode("utf-8", errors="ignore").strip()
+    digest = hashlib.sha256(resource_id.encode("utf-8")).hexdigest()
+    return f"{label or 'resource'}__{digest}"
+
+
 def write_md(path: Path, content: str):
     """Markdownファイルを書き込み"""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -218,26 +228,36 @@ def backup_page(funnel_id: str, step_id: str, page_meta: dict,
     """1ページの詳細を取得してMarkdownに保存"""
     page_id = page_meta["id"]
     title = page_meta.get("title") or f"page_{page_meta.get('order', 0)}"
-    filename = sanitize(title) or f"page_{page_id}"
+    filename = resource_basename(title, page_id)
 
     time.sleep(RATE_LIMIT_WAIT)
     resp = api_get(f"/funnels/{funnel_id}/steps/{step_id}/pages/{page_id}", api_key, api_base)
-    if not resp or not isinstance(resp.get("data"), dict):
+    # page-get must identify the requested page and contain its selected body.
+    # https://docs.utage-system.com/api-reference/funnel/page-get
+    pdata = resp.get("data") if isinstance(resp, dict) else None
+    ct = pdata.get("content_type") if isinstance(pdata, dict) else None
+    valid = (isinstance(pdata, dict) and isinstance(pdata.get("id"), str)
+             and pdata["id"] == page_id and isinstance(ct, str)
+             and ct in {"elements", "raw_html"}
+             and ("content_type" not in page_meta or page_meta["content_type"] == ct))
+    if valid:
+        valid = ((ct == "elements" and isinstance(pdata.get("elements"), list)
+                  and all(isinstance(element, dict) for element in pdata["elements"]))
+                 or (ct == "raw_html" and isinstance(pdata.get("html_source"), str)))
+    if not valid:
         # エラー時はメタデータのみ保存
+        print("  ⚠️  status=incomplete code=page_detail_invalid")
         write_md(step_dir / f"{filename}.md",
                  f"---\ntype: page\nid: \"{page_id}\"\nstatus: error\n---\n\n"
                  f"# ページ: {title}\n\n> ⚠️ API取得エラー\n")
         return False
 
-    pdata = resp["data"]
-    ct = pdata.get("content_type", "elements")
-
     # 要素データまたはHTMLソース
     if ct == "elements":
-        body = json.dumps(pdata.get("elements", []), ensure_ascii=False, indent=2)
+        body = json.dumps(pdata["elements"], ensure_ascii=False, indent=2)
         body_section = f"## 要素データ\n\n```json\n{body}\n```"
     else:
-        body = pdata.get("html_source", "")
+        body = pdata["html_source"]
         body_section = f"## HTMLソース\n\n```html\n{body}\n```"
 
     # CSS / JS フィールド
@@ -249,7 +269,7 @@ def backup_page(funnel_id: str, step_id: str, page_meta: dict,
 
     content = f"""---
 type: page
-id: "{pdata.get('id', page_id)}"
+id: "{pdata['id']}"
 funnel_id: "{funnel_id}"
 step_id: "{step_id}"
 title: "{pdata.get('title', '')}"
@@ -289,7 +309,7 @@ def backup_funnel(funnel: dict, output_dir: Path, api_key: str, api_base: str, t
     """1ファネルをバックアップ"""
     funnel_id = funnel["id"]
     funnel_name = funnel["name"]
-    fn = sanitize(funnel_name) or f"funnel_{funnel_id}"
+    fn = resource_basename(funnel_name, funnel_id)
     funnel_dir = output_dir / "funnels" / fn
 
     print(f"\n📁 {funnel_name}")
@@ -329,7 +349,7 @@ steps_count: {len(steps)}
     for step in steps:
         step_id = step["id"]
         step_name = step.get("name", f"step_{step_id}")
-        sn = sanitize(step_name) or f"step_{step_id}"
+        sn = resource_basename(step_name, step_id)
         step_dir = funnel_dir / sn
 
         # ページ一覧を取得
@@ -338,9 +358,22 @@ steps_count: {len(steps)}
         checked_pages = non_paginated_list(pages_resp)
         pages_ok = checked_pages is not None
         pages = checked_pages if pages_ok else []
+        step_errors = 0
         if not pages_ok:
             total_errors += 1
+            step_errors += 1
             print("  ⚠️  status=incomplete code=page_list_failed")
+
+        # Details must finish before marking this step complete.
+        for page in pages:
+            ok = backup_page(funnel_id, step_id, page, step_dir, api_key, api_base, ts)
+            total_pages += 1
+            if not ok:
+                total_errors += 1
+                step_errors += 1
+            p_title = str(page.get("title") or "?")[:30]
+            status = "✓" if ok else "✗"
+            print(f"  {status} {step_name}/{p_title}")
 
         # ステップ _meta.md
         write_md(step_dir / "_meta.md", f"""---
@@ -352,7 +385,8 @@ step_url: "{step.get('step_url', '')}"
 order: {step.get('order', 0)}
 backed_up_at: "{ts}"
 pages_count: {len(pages)}
-status: {'complete' if pages_ok else 'incomplete'}
+status: {'complete' if pages_ok and step_errors == 0 else 'incomplete'}
+errors: {step_errors}
 ---
 
 # ステップ: {step_name}
@@ -364,16 +398,6 @@ status: {'complete' if pages_ok else 'incomplete'}
 | 並び順 | {step.get('order', 0)} |
 | ページ数 | {len(pages)} |
 """)
-
-        # 各ページの詳細を取得
-        for page in pages:
-            ok = backup_page(funnel_id, step_id, page, step_dir, api_key, api_base, ts)
-            total_pages += 1
-            if not ok:
-                total_errors += 1
-            p_title = page.get("title", "?")[:30]
-            status = "✓" if ok else "✗"
-            print(f"  {status} {step_name}/{p_title}")
 
     return {"steps": len(steps), "pages": total_pages, "errors": total_errors}
 

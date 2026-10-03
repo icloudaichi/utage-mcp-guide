@@ -1,6 +1,7 @@
 """Offline evidence consistency; these assertions do not contact UTAGE."""
 import collections
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -8,7 +9,7 @@ from unittest.mock import Mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from contract_checks import build_read_plan, execute_read_plan, ContractError
+from contract_checks import build_read_plan, execute_read_plan, ContractError, PUBLIC_FIELD_NAMES
 
 class CatalogSnapshotTests(unittest.TestCase):
     @classmethod
@@ -57,10 +58,22 @@ class CatalogSnapshotTests(unittest.TestCase):
 
     def test_fixtures_are_only_anonymous_shape_not_response_values(self):
         tags = {'NoneType', 'str', 'int', 'float', 'bool', 'null', 'string', 'integer', 'number', 'boolean'}
+        schema_keys = PUBLIC_FIELD_NAMES | {
+            'base_date', 'common_reader_id', 'scenario_fields', 'common_fields',
+            'business_id', 'deny_multiple_purchases', 'has_sales_limit', 'is_archived',
+            'max_sales_quantity', 'memo', 'order', 'product_group_id', 'product_detail_id',
+            'payment_provider', 'charge_type', 'billing_cycle', 'amount', 'recurring_amount',
+            'label', 'default', 'options', 'children', 'content', 'text', 'value',
+            'isError', 'error', 'code', 'message',
+        }
+        structural_keys = {'object', 'array', 'length', 'array_item_shapes', 'count', 'types', '[other-fields]'}
         def walk(value):
             if isinstance(value, dict):
                 for key, child in value.items():
-                    self.assertNotIn('@', key)
+                    self.assertTrue(key in schema_keys | structural_keys
+                                    or re.fullmatch(r'free[0-9]{1,2}', key)
+                                    or re.fullmatch(r'\[other-key-[0-9]+\]', key),
+                                    'unknown key in anonymous shape')
                     walk(child)
             elif isinstance(value, list):
                 for child in value:
@@ -69,8 +82,12 @@ class CatalogSnapshotTests(unittest.TestCase):
                 self.assertIn(value, tags)
             else:
                 self.assertIsInstance(value, int)
+        for dynamic_key in ('Bearer synthetic-token', 'contract_synthetic_9281', '09012345678'):
+            with self.subTest(dynamic_key=dynamic_key), self.assertRaises(AssertionError):
+                walk({'object': {dynamic_key: 'str'}})
         for p in (ROOT / 'tests/fixtures').glob('*-shape.json'):
             fixture = json.loads(p.read_text())
+            self.assertLessEqual(set(fixture), {'origin', 'case', 'tool', 'shape'})
             self.assertEqual(fixture['origin'], 'observed_types_only')
             walk(fixture['shape'])
 

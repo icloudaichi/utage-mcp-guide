@@ -61,6 +61,8 @@ class CheckedResult:
     http_status: int | None
     payload: Any = field(default=None, repr=False)
     identity_binding: str = "transport"
+    checked_tool: str | None = None
+    checked_profile: str | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -152,7 +154,7 @@ def _auth_marker(value: Any) -> bool:
     ))
 
 
-def _error_marker(value: Any, depth: int = 0) -> str | None:
+def _error_marker(value: Any, depth: int = 0, *, check_execution_flags: bool = True) -> str | None:
     if depth > 64:
         return "invalid_result"
     if isinstance(value, Mapping):
@@ -176,9 +178,12 @@ def _error_marker(value: Any, depth: int = 0) -> str | None:
         for key in ("error", "errors", "exception", "fault"):
             if value.get(key):
                 return "blocked_auth" if _auth_marker(value[key]) else "tool_error"
-        if value.get("success") is False:
-            return "blocked_auth" if _auth_marker(value) else "tool_error"
-        if str(value.get("status", "")).lower() in {
+        if check_execution_flags and "success" in value:
+            if not isinstance(value["success"], bool):
+                return "invalid_result"
+            if value["success"] is False:
+                return "blocked_auth" if _auth_marker(value) else "tool_error"
+        if check_execution_flags and str(value.get("status", "")).lower() in {
             "error", "failed", "failure", "auth_error", "autherror", "unauthorized",
         }:
             return "blocked_auth" if _auth_marker(value) else "tool_error"
@@ -191,12 +196,19 @@ def _error_marker(value: Any, depth: int = 0) -> str | None:
             # Schema property names are data, not a reported execution error.
             if key in ("inputSchema", "outputSchema", "properties"):
                 continue
-            marker = _error_marker(child, depth + 1)
+            wrapper = key in ("result", "body", "structuredContent", "content")
+            if key == "data" and isinstance(child, Mapping):
+                wrapper = any(name in child for name in (
+                    "result", "body", "structuredContent", "content", "data"))
+            marker = _error_marker(child, depth + 1, check_execution_flags=wrapper)
             if marker:
                 return marker
     elif isinstance(value, (list, tuple)):
         for child in value:
-            marker = _error_marker(child, depth + 1)
+            # Lists are resource records. Explicit MCP text blocks reset their
+            # decoded content to execution flags above; business status/success
+            # values alone are not a reported tool failure.
+            marker = _error_marker(child, depth + 1, check_execution_flags=False)
             if marker:
                 return marker
     return None
@@ -221,6 +233,28 @@ def _decode(value: Any, depth: int = 0) -> Any:
     return value
 
 
+def _content_payload(content: Any) -> Any:
+    """Only a single, JSON text block is unambiguous MCP data evidence."""
+    if not isinstance(content, list) or len(content) != 1:
+        return None
+    block = content[0]
+    if not isinstance(block, Mapping) or block.get("type") != "text" or "text" not in block:
+        return None
+    decoded = _decode(block["text"])
+    return decoded if isinstance(decoded, (Mapping, list)) else None
+
+
+def _has_data_evidence(payload: Any) -> bool:
+    signal_fields = {
+        "status", "success", "error", "errors", "message", "isError", "proxy_status",
+        "tool", "tool_name", "profile", "profile_alias", "http_status", "status_code",
+        "jsonrpc", "total", "per_page", "current_page", "last_page", "content",
+        "structuredContent", "result", "body",
+    }
+    return (isinstance(payload, list)
+            or isinstance(payload, Mapping) and bool(set(payload).difference(signal_fields)))
+
+
 def unwrap_result(
     response: Any, *, expected_tool: str, expected_profile: str,
 ) -> CheckedResult:
@@ -235,121 +269,103 @@ def unwrap_result(
         raise ContractError("tool_not_allowlisted")
     if expected_profile not in PROFILE_WIRE_NAMES.values():
         raise ContractError("unknown_profile")
+
+    def finish(success, marker, http_status, payload=None, identity_binding="transport"):
+        return CheckedResult(success, marker, http_status, payload, identity_binding,
+                             expected_tool, expected_profile)
+
     if isinstance(response, str) and _decode(response) is None:
-        return CheckedResult(False, "blocked_auth" if _auth_marker(response)
-                             else "invalid_result", None)
+        return finish(False, "blocked_auth" if _auth_marker(response)
+                      else "invalid_result", None)
     root = _decode(response)
     if not isinstance(root, Mapping):
-        return CheckedResult(False, _error_marker(response) or "invalid_result", None)
-    candidates = [root]
-    text_payloads = []
-    if "content" in root:
-        if not isinstance(root["content"], list):
-            return CheckedResult(False, "invalid_result", None)
-        for block in root["content"]:
-            if isinstance(block, Mapping) and block.get("type") == "text":
-                decoded = _decode(block.get("text"))
-                if decoded is None:
-                    if _auth_marker(block.get("text")):
-                        return CheckedResult(False, "blocked_auth", None)
-                    if (isinstance(block.get("text"), str)
-                            and re.search(r"\b(error|failed|failure|exception)\b|エラー|失敗",
-                                          block["text"], re.IGNORECASE)):
-                        return CheckedResult(False, "tool_error", None)
-                else:
-                    candidates.append(decoded)
-                    text_payloads.append(decoded)
-    if "structuredContent" in root:
-        candidates.append(root["structuredContent"])
+        return finish(False, _error_marker(response) or "invalid_result", None)
     http_status = None
     identity_seen = False
-    inspected_envelopes = []
     expected_alias = next(alias for alias, wire in PROFILE_WIRE_NAMES.items()
                           if wire == expected_profile)
-    # Inspect every wrapper branch, not individual descriptors/data array items.
-    for candidate in candidates:
-        pending = [(candidate, 0)]
-        while pending:
-            cursor, depth = pending.pop()
-            if depth > 64:
-                return CheckedResult(False, "invalid_result", http_status)
-            if not isinstance(cursor, Mapping):
-                continue
-            inspected_envelopes.append(cursor)
+    # The same wrapper decoder is used at every depth, including a CallToolResult
+    # inside a JSON-RPC result. Never inspect only the outer MCP content array.
+    pending = [(root, 0, True)]
+    while pending:
+        cursor, depth, execution_flags = pending.pop()
+        if depth > 64:
+            return finish(False, "invalid_result", http_status)
+        if isinstance(cursor, Mapping):
             for key in ("http_status", "status_code"):
                 if key in cursor:
                     code = cursor[key]
                     if not _integer(code) or not 100 <= code <= 599:
-                        return CheckedResult(False, "invalid_http_status", None)
+                        return finish(False, "invalid_http_status", None)
                     if http_status is not None and code != http_status:
-                        return CheckedResult(False, "http_status_mismatch", None)
+                        return finish(False, "http_status_mismatch", None)
                     http_status = code
             for key in ("tool", "tool_name"):
                 if key in cursor:
                     identity_seen = True
                     if cursor[key] != expected_tool:
-                        return CheckedResult(False, "tool_mismatch", http_status)
+                        return finish(False, "tool_mismatch", http_status)
             for key, expected in (("profile", expected_profile),
                                   ("profile_alias", expected_alias)):
                 if key in cursor:
                     identity_seen = True
                     if cursor[key] != expected:
-                        return CheckedResult(False, "profile_mismatch", http_status)
-            if "jsonrpc" in cursor and "result" not in cursor and not cursor.get("error"):
-                return CheckedResult(False, "invalid_result", http_status)
-            for nested_key in ("structuredContent", "result", "body", "data"):
-                if nested_key in cursor:
-                    decoded = _decode(cursor[nested_key])
-                    if not isinstance(decoded, (Mapping, list)):
-                        return CheckedResult(False, "invalid_result", http_status)
-                    inspected_envelopes.append(decoded)
-                    pending.append((decoded, depth + 1))
-    for candidate in candidates + inspected_envelopes:
-        marker = _error_marker(candidate)
+                        return finish(False, "profile_mismatch", http_status)
+        marker = _error_marker(cursor, check_execution_flags=execution_flags)
         if marker:
-            return CheckedResult(False, marker, http_status)
+            return finish(False, marker, http_status)
+        if not isinstance(cursor, Mapping):
+            continue
+        if "jsonrpc" in cursor and "result" not in cursor and not cursor.get("error"):
+            return finish(False, "invalid_result", http_status)
+        wrapper_keys = ("structuredContent", "content", "result", "body", "data")
+        if not any(key in cursor for key in wrapper_keys) and not _has_data_evidence(cursor):
+            return finish(False, "invalid_result", http_status)
+        for nested_key in wrapper_keys:
+            if nested_key in cursor:
+                decoded = (_content_payload(cursor[nested_key]) if nested_key == "content"
+                           else _decode(cursor[nested_key]))
+                if not isinstance(decoded, (Mapping, list)):
+                    return finish(False, "invalid_result", http_status)
+                wrapper = nested_key != "data" or isinstance(decoded, Mapping) and any(
+                    name in decoded for name in ("result", "body", "structuredContent", "content", "data"))
+                pending.append((decoded, depth + 1, wrapper))
     if http_status is not None and not 200 <= http_status <= 299:
-        return CheckedResult(False, "blocked_auth" if http_status in (401, 403)
-                             else "http_error", http_status)
-    if "structuredContent" in root:
-        payload = root["structuredContent"]
-    elif "content" in root:
-        if len(text_payloads) != 1:
-            return CheckedResult(False, "invalid_result", http_status)
-        payload = text_payloads[0]
-    else:
-        payload = root
+        return finish(False, "blocked_auth" if http_status in (401, 403)
+                      else "http_error", http_status)
+    payload = root
     for _ in range(65):
         payload = _decode(payload)
         if not isinstance(payload, Mapping):
             break
-        nested_key = next((key for key in ("result", "body", "data") if key in payload), None)
+        nested_key = next((key for key in ("structuredContent", "content", "result", "body", "data")
+                           if key in payload), None)
         if nested_key is None:
             break
-        payload = payload[nested_key]
+        payload = (_content_payload(payload[nested_key]) if nested_key == "content"
+                   else _decode(payload[nested_key]))
     else:
-        return CheckedResult(False, "invalid_result", http_status)
-    signal_fields = {
-        "status", "success", "error", "errors", "message", "isError", "proxy_status",
-        "tool", "tool_name", "profile", "profile_alias", "http_status", "status_code",
-        "jsonrpc", "total", "per_page", "current_page", "last_page",
-    }
-    if (not isinstance(payload, (Mapping, list))
-            or isinstance(payload, Mapping) and not set(payload).difference(signal_fields)):
-        return CheckedResult(False, "invalid_result", http_status)
+        return finish(False, "invalid_result", http_status)
+    if not _has_data_evidence(payload):
+        return finish(False, "invalid_result", http_status)
     # Inspect the decoded final body too (a proxy body may be a JSON string).
-    marker = _error_marker(payload)
+    marker = _error_marker(payload, check_execution_flags=False)
     if marker:
-        return CheckedResult(False, marker, http_status)
-    return CheckedResult(True, None, http_status, payload,
-                         "echoed" if identity_seen else "transport")
+        return finish(False, marker, http_status)
+    return finish(True, None, http_status, payload,
+                  "echoed" if identity_seen else "transport")
 
 
 def make_receipt(
     plan: ReadPlan, result: CheckedResult, *, item_field_names: Sequence[str] = (),
     verification_kind: str = "mock_contract",
 ) -> dict[str, Any]:
-    """Construct a public receipt exclusively from fixed, allowlisted fields."""
+    """Construct a fixed receipt after rechecking result evidence and binding.
+
+    Use a result returned by unwrap_result/execute_read_plan. A caller-created
+    success flag is insufficient: HTTP status, payload, and checked tool/profile
+    must agree with the plan. The receipt still makes no full-schema claim.
+    """
     checked = build_read_plan(plan.tool, plan.profile_alias, plan.arguments)
     if plan.wire_profile != checked.wire_profile:
         raise ContractError("plan_profile_mismatch")
@@ -367,6 +383,20 @@ def make_receipt(
     if (result.http_status is not None
             and (not _integer(result.http_status) or not 100 <= result.http_status <= 599)):
         raise ContractError("invalid_http_status")
+    if result.success and result.http_status is not None and not 200 <= result.http_status <= 299:
+        raise ContractError("inconsistent_http_success")
+    if result.checked_tool != checked.tool or result.checked_profile != checked.wire_profile:
+        raise ContractError("result_binding_mismatch")
+    if result.identity_binding not in ("transport", "echoed"):
+        raise ContractError("invalid_result_binding")
+    if result.success:
+        response = {"data": result.payload}
+        if result.http_status is not None:
+            response["http_status"] = result.http_status
+        evidence = unwrap_result(response, expected_tool=checked.tool,
+                                 expected_profile=checked.wire_profile)
+        if not evidence.success:
+            raise ContractError("invalid_result_evidence")
     return {
         "tool": checked.tool,
         "profile_alias": checked.profile_alias,
