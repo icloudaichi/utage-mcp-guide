@@ -1,0 +1,53 @@
+{
+  "origin": "observed_types_only",
+  "case": "mcp-reference",
+  "shape": {
+    "object": {
+      "data": {
+        "array": [
+          {
+            "object": {
+              "type": "str",
+              "name": "str",
+              "category": "str",
+              "description": "str",
+              "[other-key-4]": {
+                "array": [
+                  "str"
+                ],
+                "length": 1
+              }
+            }
+          },
+          {
+            "object": {
+              "type": "str",
+              "name": "str",
+              "category": "str",
+              "description": "str",
+              "[other-key-4]": {
+                "array": [
+                  "str"
+                ],
+                "length": 45
+              }
+            }
+          },
+          {
+            "object": {
+              "type": "str",
+              "name": "str",
+              "category": "str",
+              "description": "str",
+              "[other-key-4]": {
+                "array": [],
+                "length": 0
+              }
+            }
+          }
+        ],
+        "length": 29
+      }
+    }
+  }
+}

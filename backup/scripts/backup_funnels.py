@@ -15,6 +15,7 @@ MCPツール経由だとコンテキスト上限に達するため、このス�
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -27,14 +28,32 @@ from urllib.error import HTTPError, URLError
 
 # ─── 設定 ────────────────────────────────────────
 
-API_BASE_DEFAULT = "https://utage-system.com/api/v1"
+# Official API base: https://docs.utage-system.com/api-reference/overview
+API_BASE_DEFAULT = "https://api.utage-system.com/v1"
 CONFIG_DIR = Path.home() / ".utage-mcp-guide"
 ENV_FILE = CONFIG_DIR / ".env"
 RATE_LIMIT_WAIT = 1.0  # API呼び出し間隔（秒）
 MAX_RETRIES = 3
+SAFE_ERROR_CODES = {
+    "bad_request", "conflict", "forbidden", "internal_error", "invalid_encoding",
+    "invalid_filetype", "not_found", "rate_limit_exceeded", "unauthorized",
+    "validation_error", "monthly_limit_exceeded", "hourly_limit_exceeded",
+    "total_limit_exceeded", "not_uploaded", "folder_not_found",
+}
 
 
 # ─── ユーティリティ ──────────────────────────────
+
+def normalize_api_base(base_url: str) -> str:
+    """Accept an origin or a versioned base without appending /v1 twice."""
+    base_url = base_url.strip().rstrip("/")
+    # Migrate the previous default if it was copied into an existing config.
+    if not base_url or base_url in {
+        "https://utage-system.com/api", "https://utage-system.com/api/v1"
+    }:
+        return API_BASE_DEFAULT
+    return base_url if base_url.endswith("/v1") else f"{base_url}/v1"
+
 
 def load_config() -> tuple:
     """~/.utage-mcp-guide/.env からAPIキーとベースURLを読み込む"""
@@ -56,7 +75,7 @@ def load_config() -> tuple:
         print("❌ APIキーが空です。setup_apikey.py を再実行してください。")
         sys.exit(1)
 
-    api_base = f"{base_url}/v1" if base_url else API_BASE_DEFAULT
+    api_base = normalize_api_base(base_url)
     return api_key, api_base
 
 
@@ -76,33 +95,124 @@ def api_get(endpoint: str, api_key: str, api_base: str, params: dict = None) -> 
 
         try:
             with urlopen(req, timeout=30) as resp:
-                return json.loads(resp.read().decode("utf-8"))
+                result = json.loads(resp.read().decode("utf-8"))
+                if not isinstance(result, dict) or "error" in result:
+                    print("  ⚠️  status=invalid_response code=invalid_response")
+                    return None
+                return result
         except HTTPError as e:
             if e.code == 429 and attempt < MAX_RETRIES:
                 wait = (attempt + 1) * 5  # 5s, 10s, 15s
                 print(f"  ⏳ レート制限 → {wait}秒待機 (リトライ {attempt+1}/{MAX_RETRIES})")
                 time.sleep(wait)
                 continue
-            body = e.read().decode("utf-8", errors="replace")
-            print(f"  ⚠️  HTTP {e.code}: {endpoint} → {body[:200]}")
+            # Error messages/details may contain contact data or tokens. Keep only
+            # the HTTP status and a known, fixed API error code in console logs.
+            code = "unknown_error"
+            try:
+                error = json.loads(e.read(4096).decode("utf-8"))
+                candidate = error.get("error", {}).get("code")
+                if isinstance(candidate, str) and candidate in SAFE_ERROR_CODES:
+                    code = candidate
+            except Exception:
+                pass
+            print(f"  ⚠️  status={e.code} code={code}")
             return None
-        except URLError as e:
-            print(f"  ⚠️  接続エラー: {e.reason}")
+        except URLError:
+            print("  ⚠️  status=transport_error code=transport_error")
             return None
-        except Exception as e:
+        except Exception:
             if attempt < MAX_RETRIES:
                 wait = (attempt + 1) * 3
-                print(f"  ⏳ {type(e).__name__} → {wait}秒待機")
+                print(f"  ⏳ code=invalid_response → {wait}秒待機")
                 time.sleep(wait)
                 continue
-            print(f"  ⚠️  予期しないエラー: {type(e).__name__}: {e}")
+            print("  ⚠️  status=invalid_response code=invalid_response")
             return None
     return None
+
+
+def fetch_all_funnels(api_key: str, api_base: str) -> tuple:
+    """Return a checked full list and completeness metadata, never guess totals."""
+    funnels = []
+    seen_ids = set()
+    expected_total = None
+    expected_per_page = None
+    page = 1
+    while True:
+        resp = api_get("/funnels", api_key, api_base, {"page": page, "per_page": 100})
+        if resp is None:
+            failure = "api_error"
+            break
+        data, meta = resp.get("data"), resp.get("meta")
+        if not isinstance(data, list) or not isinstance(meta, dict):
+            failure = "invalid_pagination"
+            break
+        current_page, per_page, total = (meta.get(k) for k in ("current_page", "per_page", "total"))
+        if (any(type(v) is not int for v in (current_page, per_page, total))
+                or current_page != page or not 1 <= per_page <= 100 or total < 0
+                or len(data) > per_page):
+            failure = "invalid_pagination"
+            break
+        if expected_total is None:
+            expected_total, expected_per_page = total, per_page
+        elif total != expected_total or per_page != expected_per_page:
+            failure = "pagination_changed"
+            break
+        expected_count = min(per_page, max(total - (page - 1) * per_page, 0))
+        if len(data) != expected_count:
+            failure = "count_mismatch"
+            break
+        if any(not isinstance(f, dict) or not isinstance(f.get("id"), str)
+               or not f["id"] or not isinstance(f.get("name"), str) for f in data):
+            failure = "invalid_resource"
+            break
+        ids = [f["id"] for f in data]
+        if len(ids) != len(set(ids)) or seen_ids.intersection(ids):
+            failure = "duplicate_resource"
+            break
+        funnels.extend(data)
+        seen_ids.update(ids)
+        if page * per_page >= expected_total:
+            complete = len(funnels) == expected_total
+            return funnels, {"complete": complete, "expected_total": expected_total,
+                             "failure": None if complete else "count_mismatch"}
+        if not data:
+            failure = "count_mismatch"
+            break
+        page += 1
+        time.sleep(RATE_LIMIT_WAIT)
+    return funnels, {"complete": False, "expected_total": expected_total, "failure": failure}
+
+
+def non_paginated_list(response: dict):
+    """Check the endpoint-specific steps/pages schema; reject unknown paging."""
+    # Their official specs expose only data, without page/per_page parameters:
+    # https://docs.utage-system.com/api-reference/funnel/step-list
+    # https://docs.utage-system.com/api-reference/funnel/page-list
+    if not isinstance(response, dict) or set(response) != {"data"}:
+        return None
+    data = response["data"]
+    if (not isinstance(data, list)
+            or any(not isinstance(item, dict) or not isinstance(item.get("id"), str)
+                   or not item["id"] for item in data)):
+        return None
+    ids = [item["id"] for item in data]
+    return data if len(ids) == len(set(ids)) else None
 
 
 def sanitize(name: str) -> str:
     """ファイル名に使えない文字を置換"""
     return re.sub(r'[/:*?"<>|\\]', '_', name)[:100].strip()
+
+
+def resource_basename(name: str, resource_id: str) -> str:
+    """Keep a readable label and a stable ID digest, without lossy ID escaping."""
+    label = sanitize(name) if isinstance(name, str) else ""
+    # Leave room for the digest and extension within common 255-byte limits.
+    label = label.encode("utf-8")[:180].decode("utf-8", errors="ignore").strip()
+    digest = hashlib.sha256(resource_id.encode("utf-8")).hexdigest()
+    return f"{label or 'resource'}__{digest}"
 
 
 def write_md(path: Path, content: str):
@@ -118,26 +228,36 @@ def backup_page(funnel_id: str, step_id: str, page_meta: dict,
     """1ページの詳細を取得してMarkdownに保存"""
     page_id = page_meta["id"]
     title = page_meta.get("title") or f"page_{page_meta.get('order', 0)}"
-    filename = sanitize(title) or f"page_{page_id}"
+    filename = resource_basename(title, page_id)
 
     time.sleep(RATE_LIMIT_WAIT)
     resp = api_get(f"/funnels/{funnel_id}/steps/{step_id}/pages/{page_id}", api_key, api_base)
-    if not resp:
+    # page-get must identify the requested page and contain its selected body.
+    # https://docs.utage-system.com/api-reference/funnel/page-get
+    pdata = resp.get("data") if isinstance(resp, dict) else None
+    ct = pdata.get("content_type") if isinstance(pdata, dict) else None
+    valid = (isinstance(pdata, dict) and isinstance(pdata.get("id"), str)
+             and pdata["id"] == page_id and isinstance(ct, str)
+             and ct in {"elements", "raw_html"}
+             and ("content_type" not in page_meta or page_meta["content_type"] == ct))
+    if valid:
+        valid = ((ct == "elements" and isinstance(pdata.get("elements"), list)
+                  and all(isinstance(element, dict) for element in pdata["elements"]))
+                 or (ct == "raw_html" and isinstance(pdata.get("html_source"), str)))
+    if not valid:
         # エラー時はメタデータのみ保存
+        print("  ⚠️  status=incomplete code=page_detail_invalid")
         write_md(step_dir / f"{filename}.md",
                  f"---\ntype: page\nid: \"{page_id}\"\nstatus: error\n---\n\n"
                  f"# ページ: {title}\n\n> ⚠️ API取得エラー\n")
         return False
 
-    pdata = resp.get("data", resp)
-    ct = pdata.get("content_type", "elements")
-
     # 要素データまたはHTMLソース
     if ct == "elements":
-        body = json.dumps(pdata.get("elements", []), ensure_ascii=False, indent=2)
+        body = json.dumps(pdata["elements"], ensure_ascii=False, indent=2)
         body_section = f"## 要素データ\n\n```json\n{body}\n```"
     else:
-        body = pdata.get("html_source", "")
+        body = pdata["html_source"]
         body_section = f"## HTMLソース\n\n```html\n{body}\n```"
 
     # CSS / JS フィールド
@@ -149,7 +269,7 @@ def backup_page(funnel_id: str, step_id: str, page_meta: dict,
 
     content = f"""---
 type: page
-id: "{pdata.get('id', page_id)}"
+id: "{pdata['id']}"
 funnel_id: "{funnel_id}"
 step_id: "{step_id}"
 title: "{pdata.get('title', '')}"
@@ -189,7 +309,7 @@ def backup_funnel(funnel: dict, output_dir: Path, api_key: str, api_base: str, t
     """1ファネルをバックアップ"""
     funnel_id = funnel["id"]
     funnel_name = funnel["name"]
-    fn = sanitize(funnel_name) or f"funnel_{funnel_id}"
+    fn = resource_basename(funnel_name, funnel_id)
     funnel_dir = output_dir / "funnels" / fn
 
     print(f"\n📁 {funnel_name}")
@@ -197,11 +317,10 @@ def backup_funnel(funnel: dict, output_dir: Path, api_key: str, api_base: str, t
     # ステップ一覧を取得
     time.sleep(RATE_LIMIT_WAIT)
     steps_resp = api_get(f"/funnels/{funnel_id}/steps", api_key, api_base)
-    if not steps_resp:
-        print(f"  ⚠️  ステップ取得失敗")
+    steps = non_paginated_list(steps_resp)
+    if steps is None:
+        print("  ⚠️  status=incomplete code=step_list_failed")
         return {"steps": 0, "pages": 0, "errors": 1}
-
-    steps = steps_resp.get("data", [])
 
     # ファネル _meta.md
     write_md(funnel_dir / "_meta.md", f"""---
@@ -230,13 +349,31 @@ steps_count: {len(steps)}
     for step in steps:
         step_id = step["id"]
         step_name = step.get("name", f"step_{step_id}")
-        sn = sanitize(step_name) or f"step_{step_id}"
+        sn = resource_basename(step_name, step_id)
         step_dir = funnel_dir / sn
 
         # ページ一覧を取得
         time.sleep(RATE_LIMIT_WAIT)
         pages_resp = api_get(f"/funnels/{funnel_id}/steps/{step_id}/pages", api_key, api_base)
-        pages = pages_resp.get("data", []) if pages_resp else []
+        checked_pages = non_paginated_list(pages_resp)
+        pages_ok = checked_pages is not None
+        pages = checked_pages if pages_ok else []
+        step_errors = 0
+        if not pages_ok:
+            total_errors += 1
+            step_errors += 1
+            print("  ⚠️  status=incomplete code=page_list_failed")
+
+        # Details must finish before marking this step complete.
+        for page in pages:
+            ok = backup_page(funnel_id, step_id, page, step_dir, api_key, api_base, ts)
+            total_pages += 1
+            if not ok:
+                total_errors += 1
+                step_errors += 1
+            p_title = str(page.get("title") or "?")[:30]
+            status = "✓" if ok else "✗"
+            print(f"  {status} {step_name}/{p_title}")
 
         # ステップ _meta.md
         write_md(step_dir / "_meta.md", f"""---
@@ -248,6 +385,8 @@ step_url: "{step.get('step_url', '')}"
 order: {step.get('order', 0)}
 backed_up_at: "{ts}"
 pages_count: {len(pages)}
+status: {'complete' if pages_ok and step_errors == 0 else 'incomplete'}
+errors: {step_errors}
 ---
 
 # ステップ: {step_name}
@@ -259,16 +398,6 @@ pages_count: {len(pages)}
 | 並び順 | {step.get('order', 0)} |
 | ページ数 | {len(pages)} |
 """)
-
-        # 各ページの詳細を取得
-        for page in pages:
-            ok = backup_page(funnel_id, step_id, page, step_dir, api_key, api_base, ts)
-            total_pages += 1
-            if not ok:
-                total_errors += 1
-            p_title = page.get("title", "?")[:30]
-            status = "✓" if ok else "✗"
-            print(f"  {status} {step_name}/{p_title}")
 
     return {"steps": len(steps), "pages": total_pages, "errors": total_errors}
 
@@ -295,18 +424,8 @@ def main():
 
     # ファネル一覧を取得
     print("📋 ファネル一覧を取得中...")
-    all_funnels = []
-    page = 1
-    while True:
-        resp = api_get("/funnels", api_key, api_base, {"page": page, "per_page": 100})
-        if not resp or not resp.get("data"):
-            break
-        all_funnels.extend(resp["data"])
-        meta = resp.get("meta", {})
-        if page * meta.get("per_page", 100) >= meta.get("total", 0):
-            break
-        page += 1
-        time.sleep(RATE_LIMIT_WAIT)
+    all_funnels, listing = fetch_all_funnels(api_key, api_base)
+    fetched_funnel_count = len(all_funnels)
 
     # 名前フィルタ
     if args.name:
@@ -317,9 +436,20 @@ def main():
     # ファネルリストをJSONとして保存
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "funnel_list.json").write_text(
-        json.dumps({"data": all_funnels}, ensure_ascii=False, indent=2),
+        json.dumps({"data": all_funnels, "meta": listing}, ensure_ascii=False, indent=2),
         encoding="utf-8"
     )
+
+    manifest_path = output_dir / "_backup_manifest.json"
+    manifest = {"status": "incomplete", "list_complete": listing["complete"],
+                "expected_total": listing["expected_total"],
+                "fetched_funnels": fetched_funnel_count,
+                "selected_funnels": len(all_funnels), "errors": 1,
+                "failure": listing["failure"]}
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    if not listing["complete"]:
+        print(f"  ⚠️  バックアップ不完全: code={listing['failure']}")
+        return 1
 
     # バックアップ実行
     stats = {"funnels": 0, "steps": 0, "pages": 0, "errors": 0}
@@ -332,9 +462,14 @@ def main():
         stats["pages"] += result["pages"]
         stats["errors"] += result["errors"]
 
+    manifest.update(status="complete" if stats["errors"] == 0 else "incomplete",
+                    errors=stats["errors"], failure=None if stats["errors"] == 0 else "resource_fetch_failed")
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
     # サマリーを作成
     summary = f"""---
 type: backup_summary
+status: {manifest['status']}
 backed_up_at: "{ts}"
 total_funnels: {stats['funnels']}
 total_steps: {stats['steps']}
@@ -368,13 +503,14 @@ total_errors: {stats['errors']}
 
     print()
     print("=" * 50)
-    print(f"  ✅ バックアップ完了!")
+    print("  ✅ バックアップ完了!" if stats["errors"] == 0 else "  ⚠️  バックアップ不完全")
     print(f"  📁 {output_dir}")
     print(f"  ファネル: {stats['funnels']} / ステップ: {stats['steps']} / ページ: {stats['pages']}")
     if stats["errors"]:
         print(f"  ⚠️  エラー: {stats['errors']} 件")
     print("=" * 50)
+    return 0 if stats["errors"] == 0 else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

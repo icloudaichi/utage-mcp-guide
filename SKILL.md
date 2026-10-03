@@ -42,21 +42,25 @@ setup/ フォルダの SKILL.md を参照してください
 | 配信アカウント・ラベル・読者 | `accounts/SKILL.md`  | `message_account_list`, `message_label_create`                  |
 | メディア参照・アップロード | `media/SKILL.md`     | `media_upload_url`, `media_video_upload_url`, `media_audio_upload_url` |
 | 会員サイト・レッスン | `member/SKILL.md`    | `member_site_list`, `member_lesson_get`, `element_types_lesson` |
+| 商品・価格ラインナップ | `payment/SKILL.md` | `payment_product_list`, `payment_product_detail_list` |
 | イベント・予約管理 | `event/SKILL.md` | `event_list`, `event_schedule_list`, `event_applicant_list` |
 | エラー報告・フィードバック  | `report/SKILL.md`    | `report_discussion.py`                                          |
 
-2026-08-22 実機確認時点の `find_tools` カタログ:
+2026-10-03 LBS接続の `find_tools` メタデータ（入力/出力スキーマ・annotationsは未取得）:
 
-| カテゴリ | 件数 | 備考 |
+| カテゴリ | 件数 | 8月からの増分 |
 |:---|---:|:---|
-| `funnel` | 23 | CRUD、アクション、統計・登録者・トラッキング系 preview を含む |
-| `message` | 71 | 配信、読者、フォーム、LINE、アクション、統計系 preview |
-| `media` | 12 | 通常メディア・動画・音声の一覧/フォルダ/アップロードURL/完了通知 |
-| `member` | 24 | 会員サイト、コース/グループ、バンドル、レッスンCRUD preview |
-| `event` | 18 | イベント、日程、カレンダー、担当者、申込者、フォーム preview |
-| `reference` | 8 | ファネル/メール/レッスン要素定義、LINEタイプ、条件定義 |
-| `integration` | 1 | Googleスプレッドシート連携アカウント一覧 |
-| **合計** | **157** | `find_tools` 自体は除く |
+| `funnel` | 32 | +9 |
+| `message` | 102 | +31 |
+| `media` | 15 | +3 |
+| `member` | 48 | +24 |
+| `event` | 29 | +11 |
+| `payment` | 17 | +17 |
+| `reference` | 8 | 0 |
+| `integration` | 2 | +1 |
+| **合計** | **253** | **+96** |
+
+`find_tools` 自体は除きます。全253件の分類・提供状態・実read/未実行は [docs/tool-catalog.md](docs/tool-catalog.md) に記録しています。`find_tools` は名前・説明を発見する手段であり、入力schema確認を代替しません。現行クライアントの定義を確認し、readで認証対象を照合します。今回の契約テスト成功と本番API成功は区別してください。
 
 `reference` / `integration` の全ツール:
 
@@ -68,8 +72,9 @@ setup/ フォルダの SKILL.md を参照してください
 | `message_types_line` | LINEメッセージタイプ定義 |
 | `message_condition_types` | 配信条件タイプ定義 |
 | `google_spreadsheet_account_list` | Googleスプレッドシート連携アカウント一覧 |
+| `ads_setting_list` | 広告連携設定一覧 |
 
-2026-08-22には `funnel_list`、`message_account_list`、`media_list`、`member_site_list`、`event_list`、`google_spreadsheet_account_list`、`element_types_funnel` の読み取り応答を確認しました。個人情報を返し得る一覧は検証対象から除外しています。
+2026-08-22には `funnel_list`、`message_account_list`、`media_list`、`member_site_list`、`event_list`、`google_spreadsheet_account_list`、`element_types_funnel` の読み取り応答を確認しました。当時は個人情報を返し得る一覧を検証対象から除外しました。2026-10-03は最小readの共有証跡を再利用し、値を除去して [検証記録](docs/endpoint-testing.md) に残しています。
 
 ---
 
@@ -136,5 +141,5 @@ setup/ フォルダの SKILL.md を参照してください
 - **ライセンス**: MIT（スクリプト）/ CC BY 4.0（ドキュメント）
 - **対象**: UTAGE 公式 MCPサーバー + REST API v1
 - **メンテナー**: [@icloudaichi](https://github.com/icloudaichi)
-- **バージョン**: 0.6.0（2026-08-22）
+- **バージョン**: 0.7.0（2026-10-03）
 - **フィードバック**: [GitHub Discussions](https://github.com/icloudaichi/utage-mcp-guide/discussions)

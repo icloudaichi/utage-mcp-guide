@@ -1,0 +1,35 @@
+{
+  "origin": "observed_types_only",
+  "case": "payment-read-regular-second-period-plans",
+  "tool": "payment_product_detail_list",
+  "shape": {
+    "object": {
+      "data": {
+        "array_item_shapes": [
+          {
+            "object": {
+              "id": "str",
+              "name": "str",
+              "payment_provider": "str",
+              "charge_type": "str",
+              "amount": "int",
+              "recurring_amount": "int",
+              "billing_cycle": "str",
+              "order": "int",
+              "created_at": "str",
+              "updated_at": "str",
+              "[other-fields]": {
+                "count": 4,
+                "types": [
+                  "NoneType",
+                  "bool",
+                  "str"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

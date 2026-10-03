@@ -92,6 +92,10 @@ UTAGE内動画:
 
 ## 実操作確認
 
+2026-10-03カタログは48件です。バンドルCRUD/reorder、lesson reorder、受講生CRUD、受講登録CRUD、community group、受講進捗・操作履歴・完了者一覧が追加されています。全名と分類は [現行一覧](../docs/tool-catalog.md) を参照してください。今回これらの実read/writeは未実行です。
+
+`member_student_enrollment_list` は登録日・停止日を読むツールとして露出しました。課金契約statusや次回課金の証拠とは別です。`member_lesson_list` の説明ではrich text形式は一覧・並び替えのみ対応とされています。`member_lesson_get/update` が全形式で使えると判断せず、現在のcontent typeとクライアントのschemaを確認してください。
+
 2026-08-22 カタログ確認:
 - MCP `find_tools(category="member")` で member 系24ツールを確認
 - 会員サイト、コース、コースグループ、バンドル、レッスンの公開スキーマを確認（書き込み操作は未実行）

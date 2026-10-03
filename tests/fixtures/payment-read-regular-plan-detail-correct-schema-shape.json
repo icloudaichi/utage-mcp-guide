@@ -1,0 +1,34 @@
+{
+  "origin": "observed_types_only",
+  "case": "payment-read-regular-plan-detail-correct-schema",
+  "tool": "payment_product_detail_get",
+  "shape": {
+    "object": {
+      "data": {
+        "object": {
+          "id": "str",
+          "name": "str",
+          "payment_provider": "str",
+          "charge_type": "str",
+          "amount": "int",
+          "recurring_amount": "int",
+          "billing_cycle": "str",
+          "has_sales_limit": "bool",
+          "max_sales_quantity": "int",
+          "order": "int",
+          "created_at": "str",
+          "updated_at": "str",
+          "[other-fields]": {
+            "count": 74,
+            "types": [
+              "NoneType",
+              "bool",
+              "int",
+              "str"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

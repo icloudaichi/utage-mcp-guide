@@ -1,4 +1,7 @@
 .env
+.env.*
+private/
+.runtime*/
 mcp.json
 *.pyc
 __pycache__/
