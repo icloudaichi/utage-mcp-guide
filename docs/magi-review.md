@@ -10,7 +10,7 @@
 | Initial cross critique | 同commit | 3者が他者の指摘を批判・再現し、優先度を統合 |
 | First revision | `497bacc46b7ca412e9fc0959ff37462720e772d6` | 初回指摘は解消。BALTHASARがfixtureの生整数受理をP2として追加再現 |
 | Additional cross critique | 同commit | CASPAR/MELCHIORも追加P2を再現。先の承認に修正要求を補足 |
-| Final revision | `25aaf49eaf83fb8f9e2cf2c063a9a21e0a5027e1` | CASPAR / BALTHASAR / MELCHIOR の3者 approved。未解消の修正必須findingなし |
+| Final code revision | `25aaf49eaf83fb8f9e2cf2c063a9a21e0a5027e1` | CASPAR / BALTHASAR / MELCHIOR の3者 approved。未解消の修正必須findingなし |
 
 履歴は削除せず、各[独立報告・相互批判](evidence/magi/)と[hash/timestamp記録](evidence/magi/provenance.json)を残しています。ファイルのmtimeは証跡の保存時刻で、署名付き実行証明ではありません。初回の承認や全API成功へ読み替えません。
 
@@ -28,7 +28,7 @@
 
 ## Validation scope
 
-最終実装のPython標準ライブラリによるoffline/mock suiteは **73 tests pass**。[検証receipt](evidence/validation.json)へ実行環境・結果・対象commitを記録しました。最終レビュー後のcommitは報告・証跡の追記だけで、レビュー対象の実装・tests・型fixtureを変更しません。
+最終実装のPython標準ライブラリによるoffline/mock suiteは **73 tests pass**。[検証receipt](evidence/validation.json)へ実行環境・結果・対象commitを記録しました。追加の文書整合確認で、paginationのmeta必須条件をページング対象へ限定し、古いaction作成不可の案内を現行MCPメタデータ・復元未検証の範囲へ修正しました。この文書差分も3者へ追加レビューし、結果はprovenanceへ記録します。コード・tests・型fixtureは最終コードレビュー後に変更していません。
 
 253ツールのmetadata提供と6ツールの小代表readは[検証行列](endpoint-testing.md)・[read receipts](evidence/read-receipts-2026-10-03.json)に限定した証拠です。reviewerのネットワーク・credential・実サービスアクセスは0件。全schema/annotations、timezone、個別契約status/次回課金/provider subscription ID、全ページ取得、実backup、実writeは未検証です。Daichi接続はblocked authを維持し、新OAuth/key・業務変更・追加依存取得は行っていません。
 

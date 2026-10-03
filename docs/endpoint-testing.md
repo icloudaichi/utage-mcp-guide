@@ -30,7 +30,7 @@
 
 ## pagination・日時・エラー
 
-公式API概要は `page` と `per_page`、応答 `meta.current_page/per_page/total` を記載しています。ローカル検証では途中ページ欠落、重複ID、total変化、空の途中ページ、boolを含む不正metaを拒否し、連続した全件が確認できたときだけcompleteとします。metaを返さない一覧から全件完了を推定しません。MCP `tools/list` のcursorとUTAGEデータ一覧のpageを混同しません。
+公式API概要は `page` と `per_page`、応答 `meta.current_page/per_page/total` を記載しています。ページング対象のローカル検証では途中ページ欠落、重複ID、total変化、空の途中ページ、boolを含む不正metaを拒否し、連続した全件が確認できたときだけcompleteとします。ページング対象でmetaを返さない一覧から全件完了を推定しません。公式[ステップ一覧](https://docs.utage-system.com/api-reference/funnel/step-list)・[ページ一覧](https://docs.utage-system.com/api-reference/funnel/page-list)は `data` のみの非ページング形式なので、back up scriptはそのendpoint固有の形とIDを検査して受理します。この分岐はmockで確認し、実backupは未実行です。MCP `tools/list` のcursorとUTAGEデータ一覧のpageを混同しません。
 
 公式[読者一覧](https://docs.utage-system.com/api-reference/message/reader/list)と[ファネル登録者一覧](https://docs.utage-system.com/api-reference/funnel/subscriber-list)には `created_at` があり、後者の登録日フィルタはこれを基準にします。確認した公開資料には `submitted_at` とtimezoneの保証がありません。読者作成日時をフォーム再送信日時として使用せず、offsetのない日時はprovider naiveとして保持します。JST/UTCの推定変換、期日判定には使いません。
 
